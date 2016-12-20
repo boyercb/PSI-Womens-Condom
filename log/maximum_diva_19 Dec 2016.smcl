@@ -1,0 +1,2967 @@
+{smcl}
+{com}{sf}{ul off}{txt}{.-}
+      name:  {res}<unnamed>
+       {txt}log:  {res}C:/Users/cboyer.IPA/Desktop/GitHub/PSI-Womens-Condom/log/maximum_diva_19 Dec 2016.smcl
+  {txt}log type:  {res}smcl
+ {txt}opened on:  {res}19 Dec 2016, 23:00:26
+{txt}
+{com}. 
+. * reproduce all analysis steps
+. cd "${c -(}bin{c )-}"
+{res}C:\Users\cboyer.IPA\Desktop\GitHub\PSI-Womens-Condom\do
+{txt}
+{com}. do 1_clean.do
+{txt}
+{com}. /*========================================
+>   file:    1_clean.do                    
+>   authors: christopher boyer            
+>            innovations for poverty action  
+>   date:    2016-12-18                     
+>   ========================================*/
+.  
+.  /* This file cleans and recodes the raw de-identified data 
+>     from the Maximum Diva project and saves the subset of data 
+>         relevant for the construction of all figures and tables. */
+.  
+. use "${c -(}data{c )-}/maximum_diva_01_deidentified.dta", clear
+{txt}
+{com}. 
+. /* ===============================================================
+>    =============== Clean and Recode Study Variables ==============
+>    =============================================================== */
+. 
+. /* <=== outcome variables ===> */
+. 
+. /* cond6mo - in survey programming cond6mo was skipped when 
+>    condever is zero to enforce logic constraints; here we recode
+>    cond6mo to 0 if the respondent reported never using a condom */
+. replace cond6mo = 0 if condever == 0
+{txt}(359 real changes made)
+
+{com}. 
+. /* condlast - same issue as above... condlast is recoded here
+>    to no if the respondent reported never using condoms or not
+>    using them in the last 6 months */
+. replace condlast = 0 if condever == 0 | cond6mo == 0
+{txt}(1025 real changes made)
+
+{com}. 
+. /* <=== demographic covariates ===> */
+. 
+. /* education - combine the none and some primary categories
+>    from the original educational attainment variable */
+. g educ = .
+{txt}(2392 missing values generated)
+
+{com}. replace educ = 0 if eduattain == 1 | eduattain == 0 | eduattain == 2
+{txt}(521 real changes made)
+
+{com}. replace educ = 1 if eduattain == 3
+{txt}(1528 real changes made)
+
+{com}. replace educ = 2 if eduattain == 4
+{txt}(342 real changes made)
+
+{com}. 
+. /* age - use the calculated final age from the roster. correct
+>    for a few rounding errors */
+. drop if age < 17
+{txt}(4 observations deleted)
+
+{com}. replace age = 18 if age == 17
+{txt}(2 real changes made)
+
+{com}. replace age = 24 if age == 25
+{txt}(3 real changes made)
+
+{com}. 
+. /* married - collapse relationship status variable into a single
+>    dichotomous married vs. unmarried variable. */
+. g married = 0
+{txt}
+{com}. replace married = 1 if relationship == 1
+{txt}(841 real changes made)
+
+{com}. 
+. /* ward poverty rate - categorize */
+. egen mode_poverty = mode(percpoor), by(ward)
+{txt}
+{com}. replace percpoor = mode_poverty if mi(percpoor)
+{txt}(89 real changes made)
+
+{com}. g poverty = .
+{txt}(2388 missing values generated)
+
+{com}. replace poverty = 0 if percpoor >= 0 & percpoor < 0.1
+{txt}(410 real changes made)
+
+{com}. replace poverty = 1 if percpoor >= 0.1 & percpoor < 0.2
+{txt}(845 real changes made)
+
+{com}. replace poverty = 2 if percpoor >= 0.2 & percpoor < .
+{txt}(1133 real changes made)
+
+{com}. 
+. /* lives_alone - collapse household variable into living alone vs.
+>    living with others */
+. g lives_alone = household_f
+{txt}(872 missing values generated)
+
+{com}. replace lives_alone = 0 if lives_alone == .
+{txt}(872 real changes made)
+
+{com}. 
+. replace salary = 0 if salary == -999
+{txt}(1 real change made)
+
+{com}. replace salary = 0 if salary == .
+{txt}(1458 real changes made)
+
+{com}. 
+. /* <=== sexual/reproductive health covariates ===> */
+. 
+. /* childnum - keep as a continuous variable but recode the survey 
+>    missing value codes as Stata missing value codes. */
+. replace childnum = .d if childnum == 999
+{txt}(0 real changes made)
+
+{com}. replace childnum = .r if childnum == 998
+{txt}(0 real changes made)
+
+{com}. 
+. recode childnum ///
+>     (0 = 0) ///
+>     (1/5 = 1), ///
+>     gen(nchildren)
+{txt}(434 differences between childnum and nchildren)
+
+{com}.                                 
+. /* sexpartnernum - keep as a continuous variable but recode the survey
+>    missing value codes as Stata missing value codes (includes one miss
+>    entered value). */ 
+. replace sexpartnernum = .d if sexpartnernum == 999
+{txt}(0 real changes made)
+
+{com}. replace sexpartnernum = .r if sexpartnernum == 998 | sexpartnernum == 9981
+{txt}(0 real changes made)
+
+{com}. recode sexpartnernum ///
+>     (1 = 1) ///
+>     (2/3 = 2) ///
+>     (3/5 = 3) ///
+>     (nonmissing = 4), ///
+>     gen(npartners)
+{txt}(961 differences between sexpartnernum and npartners)
+
+{com}.         
+. /* sexparnter1mo - keep as a continuous variable but recode the survey 
+>    missing value codes as Stata missing value codes. */
+. replace sexpartner1mo = .d if sexpartner1mo == 999
+{txt}(0 real changes made)
+
+{com}. replace sexpartner1mo = .r if sexpartner1mo == 998
+{txt}(0 real changes made)
+
+{com}. recode sexpartner1mo ///
+>     (0 = 0) ///
+>     (1 = 1) ///
+>     (2/3 = 2) ///
+>     (3/5 = 3) ///
+>     (nonmissing = 4), ///
+>     gen(nintercourse)
+{txt}(799 differences between sexpartner1mo and nintercourse)
+
+{com}.         
+. /* sexage - keep as a continuous variable but recode the survey 
+>    missing value codes as Stata missing value codes. */
+. replace sexage = .d if sexage == 999 
+{txt}(0 real changes made)
+
+{com}. replace sexage = .r if sexage == 998
+{txt}(0 real changes made)
+
+{com}. 
+. recode sexage ///
+>    (0/18 = 0) ///
+>    (18/24 = 1), ///
+>    gen(firstsex)
+{txt}(2306 differences between sexage and firstsex)
+
+{com}.                 
+. /* sti - recode to binary variable */
+. g sti = 0
+{txt}
+{com}. replace sti = 1 if stitestever == 1
+{txt}(1896 real changes made)
+
+{com}. 
+. /* contspkpartnerrecent */
+. replace contspkpartnerrecent = .d if contspkpartnerrecent == 999
+{txt}(0 real changes made)
+
+{com}. replace contspkpartnerrecent = .r if contspkpartnerrecent == 998
+{txt}(0 real changes made)
+
+{com}. recode contspkpartnerrecent (2 = 0)
+{txt}(contspkpartnerrecent: 732 changes made)
+
+{com}. 
+. /* continiciate */
+. replace continiciate = .d if continiciate == 999
+{txt}(0 real changes made)
+
+{com}. replace continiciate = .r if continiciate == 998
+{txt}(0 real changes made)
+
+{com}. recode continiciate (2 = 0)
+{txt}(continiciate: 483 changes made)
+
+{com}. 
+. /* contagree */
+. replace contagree = .d if contagree == 999
+{txt}(0 real changes made)
+
+{com}. replace contagree = .r if contagree == 998
+{txt}(0 real changes made)
+
+{com}. recode contagree (2 = 0)
+{txt}(contagree: 630 changes made)
+
+{com}. 
+. /* condop - condom opinion questions. recode don't know 
+>    to Stata missing value */
+. foreach var of varlist condop* {c -(}
+{txt}  2{com}.         replace `var' = .d if `var' == 999
+{txt}  3{com}. {c )-}
+{txt}(0 real changes made)
+(0 real changes made)
+(0 real changes made)
+(0 real changes made)
+(0 real changes made)
+(0 real changes made)
+(0 real changes made)
+(0 real changes made)
+(0 real changes made)
+(0 real changes made)
+(0 real changes made)
+(0 real changes made)
+(0 real changes made)
+(0 real changes made)
+(0 real changes made)
+(0 real changes made)
+(0 real changes made)
+
+{com}. 
+. /* nearHF - categorize facility_km */
+. g nearHF = .
+{txt}(2388 missing values generated)
+
+{com}. replace nearHF = 0 if facility_km < 2.5
+{txt}(1918 real changes made)
+
+{com}. replace nearHF = 1 if facility_km >= 2.5 & facility_km < .
+{txt}(381 real changes made)
+
+{com}. 
+. /* conttravel - */
+. replace conttravel = .d if conttravel == 999 
+{txt}(0 real changes made)
+
+{com}. g traveltime = .
+{txt}(2388 missing values generated)
+
+{com}. replace traveltime = 0 if conttravel < 20
+{txt}(1006 real changes made)
+
+{com}. replace traveltime = 1 if conttravel >= 20 & conttravel < 40
+{txt}(707 real changes made)
+
+{com}. replace traveltime = 2 if conttravel >= 40 & !mi(conttravel)
+{txt}(367 real changes made)
+
+{com}. 
+. /* contother - readreplace other specify values; collapse other 
+>    contraceptives used in last 6 mo into 3 categories: none vs. modern 
+>    method vs. other method */
+. /*
+> OLD DEFINITION
+> g contother = .
+> replace contother = 0 if inlist(1, contuse6mo_o)
+> replace contother = 1 if inlist(1, contuse6mo_i, contuse6mo_j, contuse6mo_k, contuse6mo_m, contuse6mo_n, contuse6mo_g)
+> replace contother = 2 if inlist(1, contuse6mo_a, contuse6mo_b, contuse6mo_c, contuse6mo_h, contuse6mo_g, contuse6mo_l) 
+> replace contother = 3 if inlist(1, contuse6mo_d, contuse6mo_e, contuse6mo_f)
+> */
+. g contother = 0
+{txt}
+{com}. replace contother = 0 if inlist(1, contuse_j, contuse_k, contuse_l, contuse_n)
+{txt}(0 real changes made)
+
+{com}. replace contother = 1 if inlist(1, contuse_c, contuse_e, contuse_h, contuse_i, contuse_m) 
+{txt}(1296 real changes made)
+
+{com}. replace contother = 2 if inlist(1, contuse_afem, contuse_bfem, contuse_amale, contuse_bmale, contuse_d, contuse_f)
+{txt}(250 real changes made)
+
+{com}. 
+. /* ncontknow */
+. drop contknow_p
+{txt}
+{com}. egen nknow = rowtotal(contknow_a-contknow_i contknow_m)
+{txt}
+{com}. g ncontknow = .
+{txt}(2388 missing values generated)
+
+{com}. replace ncontknow = 0 if nknow < 3
+{txt}(907 real changes made)
+
+{com}. replace ncontknow = 1 if nknow >= 3 & !mi(nknow)
+{txt}(1481 real changes made)
+
+{com}. 
+. /* ncontuse */
+. egen nuse = rowtotal(contuse_*)
+{txt}
+{com}. 
+. g ncontuse = .
+{txt}(2388 missing values generated)
+
+{com}. replace ncontuse = 0 if nuse < 3
+{txt}(1180 real changes made)
+
+{com}. replace ncontuse = 1 if nuse >= 3 & !mi(nuse)
+{txt}(1208 real changes made)
+
+{com}. 
+. /* negative perception of condom index */
+. mca condop_a-condop_q
+{res}
+{txt}Multiple/Joint correspondence analysis{col 48}Number of obs      = {res}      989
+{col 48}{txt}Total inertia      = {res} .0108886
+{col 5}{txt}Method: {res}Burt/adjusted inertias{col 48}{txt}Number of axes     = {res}        2
+
+{txt}{col 7}          {c |}   principal               cumul 
+{col 7}Dimension {c |}    inertia     percent   percent
+{col 5}{hline 12}{c +}{hline 34}
+{col 4}{ralign 12:dim 1} {c |}{res}{col 21} .0067638{col 33}  62.12{col 44}  62.12
+{txt}{col 4}{ralign 12:dim 2} {c |}{res}{col 21} .0009307{col 33}   8.55{col 44}  70.67
+{txt}{col 4}{ralign 12:dim 3} {c |}{res}{col 21} .0003992{col 33}   3.67{col 44}  74.33
+{txt}{col 4}{ralign 12:dim 4} {c |}{res}{col 21} .0001641{col 33}   1.51{col 44}  75.84
+{txt}{col 4}{ralign 12:dim 5} {c |}{res}{col 21} .0000367{col 33}   0.34{col 44}  76.18
+{txt}{col 4}{ralign 12:dim 6} {c |}{res}{col 21} 1.33e-06{col 33}   0.01{col 44}  76.19
+{txt}{col 5}{hline 12}{c +}{hline 34}
+{col 5}{ralign 11:Total} {c |}{res}{col 21} .0108886{col 33} 100.00
+
+{txt}{help ca_statistics##|_new:Statistics} for column categories in standard normalization
+
+{space 4}{space 13}{c |}{space 1}{rcenter 25:overall}{space 1}
+{space 4}{space 0}{ralign 12:Categories}{space 1}{c |}{space 1}{ralign 7:mass}{space 1}{space 1}{ralign 7:quality}{space 1}{space 1}{ralign 7:%inert}{space 1}
+{space 4}{hline 13}{c   +}{hline 9}{hline 9}{hline 9}
+{space 4}{res:{lalign 13:condop_a}}{c |}{space 9}{space 9}{space 9}
+{space 4}{space 0}{ralign 12:False}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  0.006}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.392}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.046}}}{space 1}
+{space 4}{space 0}{ralign 12:True}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  0.053}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.392}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.005}}}{space 1}
+{space 4}{hline 13}{c   +}{hline 9}{hline 9}{hline 9}
+{space 4}{res:{lalign 13:condop_b}}{c |}{space 9}{space 9}{space 9}
+{space 4}{space 0}{ralign 12:False}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  0.006}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.465}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.048}}}{space 1}
+{space 4}{space 0}{ralign 12:True}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  0.052}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.465}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.006}}}{space 1}
+{space 4}{hline 13}{c   +}{hline 9}{hline 9}{hline 9}
+{space 4}{res:{lalign 13:condop_c}}{c |}{space 9}{space 9}{space 9}
+{space 4}{space 0}{ralign 12:False}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  0.006}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.471}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.039}}}{space 1}
+{space 4}{space 0}{ralign 12:True}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  0.053}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.471}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.004}}}{space 1}
+{space 4}{hline 13}{c   +}{hline 9}{hline 9}{hline 9}
+{space 4}{res:{lalign 13:condop_d}}{c |}{space 9}{space 9}{space 9}
+{space 4}{space 0}{ralign 12:False}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  0.005}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.397}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.034}}}{space 1}
+{space 4}{space 0}{ralign 12:True}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  0.054}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.397}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.003}}}{space 1}
+{space 4}{hline 13}{c   +}{hline 9}{hline 9}{hline 9}
+{space 4}{res:{lalign 13:condop_e}}{c |}{space 9}{space 9}{space 9}
+{space 4}{space 0}{ralign 12:False}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  0.023}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.881}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.022}}}{space 1}
+{space 4}{space 0}{ralign 12:True}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  0.036}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.881}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.014}}}{space 1}
+{space 4}{hline 13}{c   +}{hline 9}{hline 9}{hline 9}
+{space 4}{res:{lalign 13:condop_f}}{c |}{space 9}{space 9}{space 9}
+{space 4}{space 0}{ralign 12:False}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  0.023}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.728}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.023}}}{space 1}
+{space 4}{space 0}{ralign 12:True}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  0.036}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.728}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.014}}}{space 1}
+{space 4}{hline 13}{c   +}{hline 9}{hline 9}{hline 9}
+{space 4}{res:{lalign 13:condop_g}}{c |}{space 9}{space 9}{space 9}
+{space 4}{space 0}{ralign 12:False}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  0.035}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.803}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.037}}}{space 1}
+{space 4}{space 0}{ralign 12:True}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  0.024}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.803}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.055}}}{space 1}
+{space 4}{hline 13}{c   +}{hline 9}{hline 9}{hline 9}
+{space 4}{res:{lalign 13:condop_h}}{c |}{space 9}{space 9}{space 9}
+{space 4}{space 0}{ralign 12:False}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  0.042}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.771}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.035}}}{space 1}
+{space 4}{space 0}{ralign 12:True}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  0.017}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.771}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.089}}}{space 1}
+{space 4}{hline 13}{c   +}{hline 9}{hline 9}{hline 9}
+{space 4}{res:{lalign 13:condop_i}}{c |}{space 9}{space 9}{space 9}
+{space 4}{space 0}{ralign 12:False}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  0.028}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.709}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.062}}}{space 1}
+{space 4}{space 0}{ralign 12:True}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  0.031}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.709}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.057}}}{space 1}
+{space 4}{hline 13}{c   +}{hline 9}{hline 9}{hline 9}
+{space 4}{res:{lalign 13:condop_j}}{c |}{space 9}{space 9}{space 9}
+{space 4}{space 0}{ralign 12:False}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  0.005}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.826}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.043}}}{space 1}
+{space 4}{space 0}{ralign 12:True}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  0.054}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.826}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.004}}}{space 1}
+{space 4}{hline 13}{c   +}{hline 9}{hline 9}{hline 9}
+{space 4}{res:{lalign 13:condop_k}}{c |}{space 9}{space 9}{space 9}
+{space 4}{space 0}{ralign 12:False}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  0.043}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.863}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.015}}}{space 1}
+{space 4}{space 0}{ralign 12:True}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  0.016}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.863}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.039}}}{space 1}
+{space 4}{hline 13}{c   +}{hline 9}{hline 9}{hline 9}
+{space 4}{res:{lalign 13:condop_l}}{c |}{space 9}{space 9}{space 9}
+{space 4}{space 0}{ralign 12:False}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  0.031}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.722}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.067}}}{space 1}
+{space 4}{space 0}{ralign 12:True}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  0.028}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.722}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.073}}}{space 1}
+{space 4}{hline 13}{c   +}{hline 9}{hline 9}{hline 9}
+{space 4}{res:{lalign 13:condop_m}}{c |}{space 9}{space 9}{space 9}
+{space 4}{space 0}{ralign 12:False}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  0.050}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.844}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.017}}}{space 1}
+{space 4}{space 0}{ralign 12:True}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  0.009}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.844}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.102}}}{space 1}
+{space 4}{hline 13}{c   +}{hline 9}{hline 9}{hline 9}
+{space 4}{res:{lalign 13:condop_n}}{c |}{space 9}{space 9}{space 9}
+{space 4}{space 0}{ralign 12:False}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  0.001}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.744}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.009}}}{space 1}
+{space 4}{space 0}{ralign 12:True}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  0.058}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.744}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.000}}}{space 1}
+{space 4}{hline 13}{c   +}{hline 9}{hline 9}{hline 9}
+{space 4}{res:{lalign 13:condop_o}}{c |}{space 9}{space 9}{space 9}
+{space 4}{space 0}{ralign 12:False}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  0.041}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.603}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.006}}}{space 1}
+{space 4}{space 0}{ralign 12:True}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  0.018}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.603}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.014}}}{space 1}
+{space 4}{hline 13}{c   +}{hline 9}{hline 9}{hline 9}
+{space 4}{res:{lalign 13:condop_p}}{c |}{space 9}{space 9}{space 9}
+{space 4}{space 0}{ralign 12:False}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  0.058}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.712}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.000}}}{space 1}
+{space 4}{space 0}{ralign 12:True}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  0.001}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.712}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.011}}}{space 1}
+{space 4}{hline 13}{c   +}{hline 9}{hline 9}{hline 9}
+{space 4}{res:{lalign 13:condop_q}}{c |}{space 9}{space 9}{space 9}
+{space 4}{space 0}{ralign 12:False}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  0.015}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.002}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.004}}}{space 1}
+{space 4}{space 0}{ralign 12:True}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  0.044}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.002}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.001}}}{space 1}
+{space 4}{hline 13}{c  BT}{hline 9}{hline 9}{hline 9}
+
+{space 4}{space 13}{c |}{space 1}{rcenter 25:dimension_1}{space 1}
+{space 4}{space 0}{ralign 12:Categories}{space 1}{c |}{space 1}{ralign 7:coord}{space 1}{space 1}{ralign 7:sqcorr}{space 1}{space 1}{ralign 7:contrib}{space 1}
+{space 4}{hline 13}{c   +}{hline 9}{hline 9}{hline 9}
+{space 4}{res:{lalign 13:condop_a}}{c |}{space 9}{space 9}{space 9}
+{space 4}{space 0}{ralign 12:False}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  1.285}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.125}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.009}}}{space 1}
+{space 4}{space 0}{ralign 12:True}{space 1}{c |}{space 1}{ralign 7:{res:{sf: -0.135}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.125}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.001}}}{space 1}
+{space 4}{hline 13}{c   +}{hline 9}{hline 9}{hline 9}
+{space 4}{res:{lalign 13:condop_b}}{c |}{space 9}{space 9}{space 9}
+{space 4}{space 0}{ralign 12:False}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  1.127}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.107}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.008}}}{space 1}
+{space 4}{space 0}{ralign 12:True}{space 1}{c |}{space 1}{ralign 7:{res:{sf: -0.140}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.107}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.001}}}{space 1}
+{space 4}{hline 13}{c   +}{hline 9}{hline 9}{hline 9}
+{space 4}{res:{lalign 13:condop_c}}{c |}{space 9}{space 9}{space 9}
+{space 4}{space 0}{ralign 12:False}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  1.321}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.165}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.010}}}{space 1}
+{space 4}{space 0}{ralign 12:True}{space 1}{c |}{space 1}{ralign 7:{res:{sf: -0.147}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.165}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.001}}}{space 1}
+{space 4}{hline 13}{c   +}{hline 9}{hline 9}{hline 9}
+{space 4}{res:{lalign 13:condop_d}}{c |}{space 9}{space 9}{space 9}
+{space 4}{space 0}{ralign 12:False}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  0.914}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.073}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.004}}}{space 1}
+{space 4}{space 0}{ralign 12:True}{space 1}{c |}{space 1}{ralign 7:{res:{sf: -0.082}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.073}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.000}}}{space 1}
+{space 4}{hline 13}{c   +}{hline 9}{hline 9}{hline 9}
+{space 4}{res:{lalign 13:condop_e}}{c |}{space 9}{space 9}{space 9}
+{space 4}{space 0}{ralign 12:False}{space 1}{c |}{space 1}{ralign 7:{res:{sf: -1.144}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.865}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.031}}}{space 1}
+{space 4}{space 0}{ralign 12:True}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  0.751}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.865}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.020}}}{space 1}
+{space 4}{hline 13}{c   +}{hline 9}{hline 9}{hline 9}
+{space 4}{res:{lalign 13:condop_f}}{c |}{space 9}{space 9}{space 9}
+{space 4}{space 0}{ralign 12:False}{space 1}{c |}{space 1}{ralign 7:{res:{sf: -1.075}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.722}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.026}}}{space 1}
+{space 4}{space 0}{ralign 12:True}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  0.676}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.722}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.017}}}{space 1}
+{space 4}{hline 13}{c   +}{hline 9}{hline 9}{hline 9}
+{space 4}{res:{lalign 13:condop_g}}{c |}{space 9}{space 9}{space 9}
+{space 4}{space 0}{ralign 12:False}{space 1}{c |}{space 1}{ralign 7:{res:{sf: -1.153}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.796}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.047}}}{space 1}
+{space 4}{space 0}{ralign 12:True}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  1.726}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.796}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.070}}}{space 1}
+{space 4}{hline 13}{c   +}{hline 9}{hline 9}{hline 9}
+{space 4}{res:{lalign 13:condop_h}}{c |}{space 9}{space 9}{space 9}
+{space 4}{space 0}{ralign 12:False}{space 1}{c |}{space 1}{ralign 7:{res:{sf: -1.016}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.771}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.044}}}{space 1}
+{space 4}{space 0}{ralign 12:True}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  2.573}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.771}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.110}}}{space 1}
+{space 4}{hline 13}{c   +}{hline 9}{hline 9}{hline 9}
+{space 4}{res:{lalign 13:condop_i}}{c |}{space 9}{space 9}{space 9}
+{space 4}{space 0}{ralign 12:False}{space 1}{c |}{space 1}{ralign 7:{res:{sf: -1.560}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.682}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.068}}}{space 1}
+{space 4}{space 0}{ralign 12:True}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  1.430}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.682}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.063}}}{space 1}
+{space 4}{hline 13}{c   +}{hline 9}{hline 9}{hline 9}
+{space 4}{res:{lalign 13:condop_j}}{c |}{space 9}{space 9}{space 9}
+{space 4}{space 0}{ralign 12:False}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  3.129}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.642}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.045}}}{space 1}
+{space 4}{space 0}{ralign 12:True}{space 1}{c |}{space 1}{ralign 7:{res:{sf: -0.264}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.642}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.004}}}{space 1}
+{space 4}{hline 13}{c   +}{hline 9}{hline 9}{hline 9}
+{space 4}{res:{lalign 13:condop_k}}{c |}{space 9}{space 9}{space 9}
+{space 4}{space 0}{ralign 12:False}{space 1}{c |}{space 1}{ralign 7:{res:{sf: -0.687}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.848}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.020}}}{space 1}
+{space 4}{space 0}{ralign 12:True}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  1.811}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.848}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.053}}}{space 1}
+{space 4}{hline 13}{c   +}{hline 9}{hline 9}{hline 9}
+{space 4}{res:{lalign 13:condop_l}}{c |}{space 9}{space 9}{space 9}
+{space 4}{space 0}{ralign 12:False}{space 1}{c |}{space 1}{ralign 7:{res:{sf: -1.561}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.685}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.074}}}{space 1}
+{space 4}{space 0}{ralign 12:True}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  1.682}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.685}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.080}}}{space 1}
+{space 4}{hline 13}{c   +}{hline 9}{hline 9}{hline 9}
+{space 4}{res:{lalign 13:condop_m}}{c |}{space 9}{space 9}{space 9}
+{space 4}{space 0}{ralign 12:False}{space 1}{c |}{space 1}{ralign 7:{res:{sf: -0.680}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.840}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.023}}}{space 1}
+{space 4}{space 0}{ralign 12:True}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  4.021}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.840}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.138}}}{space 1}
+{space 4}{hline 13}{c   +}{hline 9}{hline 9}{hline 9}
+{space 4}{res:{lalign 13:condop_n}}{c |}{space 9}{space 9}{space 9}
+{space 4}{space 0}{ralign 12:False}{space 1}{c |}{space 1}{ralign 7:{res:{sf: -1.466}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.121}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.002}}}{space 1}
+{space 4}{space 0}{ralign 12:True}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  0.021}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.121}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.000}}}{space 1}
+{space 4}{hline 13}{c   +}{hline 9}{hline 9}{hline 9}
+{space 4}{res:{lalign 13:condop_o}}{c |}{space 9}{space 9}{space 9}
+{space 4}{space 0}{ralign 12:False}{space 1}{c |}{space 1}{ralign 7:{res:{sf: -0.373}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.561}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.006}}}{space 1}
+{space 4}{space 0}{ralign 12:True}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  0.854}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.561}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.013}}}{space 1}
+{space 4}{hline 13}{c   +}{hline 9}{hline 9}{hline 9}
+{space 4}{res:{lalign 13:condop_p}}{c |}{space 9}{space 9}{space 9}
+{space 4}{space 0}{ralign 12:False}{space 1}{c |}{space 1}{ralign 7:{res:{sf: -0.059}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.634}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.000}}}{space 1}
+{space 4}{space 0}{ralign 12:True}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  3.395}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.634}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.012}}}{space 1}
+{space 4}{hline 13}{c   +}{hline 9}{hline 9}{hline 9}
+{space 4}{res:{lalign 13:condop_q}}{c |}{space 9}{space 9}{space 9}
+{space 4}{space 0}{ralign 12:False}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  0.028}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.002}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.000}}}{space 1}
+{space 4}{space 0}{ralign 12:True}{space 1}{c |}{space 1}{ralign 7:{res:{sf: -0.010}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.002}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.000}}}{space 1}
+{space 4}{hline 13}{c  BT}{hline 9}{hline 9}{hline 9}
+
+{space 4}{space 13}{c |}{space 1}{rcenter 25:dimension_2}{space 1}
+{space 4}{space 0}{ralign 12:Categories}{space 1}{c |}{space 1}{ralign 7:coord}{space 1}{space 1}{ralign 7:sqcorr}{space 1}{space 1}{ralign 7:contrib}{space 1}
+{space 4}{hline 13}{c   +}{hline 9}{hline 9}{hline 9}
+{space 4}{res:{lalign 13:condop_a}}{c |}{space 9}{space 9}{space 9}
+{space 4}{space 0}{ralign 12:False}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  5.074}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.267}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.144}}}{space 1}
+{space 4}{space 0}{ralign 12:True}{space 1}{c |}{space 1}{ralign 7:{res:{sf: -0.533}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.267}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.015}}}{space 1}
+{space 4}{hline 13}{c   +}{hline 9}{hline 9}{hline 9}
+{space 4}{res:{lalign 13:condop_b}}{c |}{space 9}{space 9}{space 9}
+{space 4}{space 0}{ralign 12:False}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  5.570}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.358}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.201}}}{space 1}
+{space 4}{space 0}{ralign 12:True}{space 1}{c |}{space 1}{ralign 7:{res:{sf: -0.690}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.358}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.025}}}{space 1}
+{space 4}{hline 13}{c   +}{hline 9}{hline 9}{hline 9}
+{space 4}{res:{lalign 13:condop_c}}{c |}{space 9}{space 9}{space 9}
+{space 4}{space 0}{ralign 12:False}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  4.854}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.307}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.139}}}{space 1}
+{space 4}{space 0}{ralign 12:True}{space 1}{c |}{space 1}{ralign 7:{res:{sf: -0.540}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.307}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.015}}}{space 1}
+{space 4}{hline 13}{c   +}{hline 9}{hline 9}{hline 9}
+{space 4}{res:{lalign 13:condop_d}}{c |}{space 9}{space 9}{space 9}
+{space 4}{space 0}{ralign 12:False}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  5.191}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.324}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.130}}}{space 1}
+{space 4}{space 0}{ralign 12:True}{space 1}{c |}{space 1}{ralign 7:{res:{sf: -0.463}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.324}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.012}}}{space 1}
+{space 4}{hline 13}{c   +}{hline 9}{hline 9}{hline 9}
+{space 4}{res:{lalign 13:condop_e}}{c |}{space 9}{space 9}{space 9}
+{space 4}{space 0}{ralign 12:False}{space 1}{c |}{space 1}{ralign 7:{res:{sf: -0.423}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.016}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.004}}}{space 1}
+{space 4}{space 0}{ralign 12:True}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  0.278}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.016}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.003}}}{space 1}
+{space 4}{hline 13}{c   +}{hline 9}{hline 9}{hline 9}
+{space 4}{res:{lalign 13:condop_f}}{c |}{space 9}{space 9}{space 9}
+{space 4}{space 0}{ralign 12:False}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  0.267}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.006}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.002}}}{space 1}
+{space 4}{space 0}{ralign 12:True}{space 1}{c |}{space 1}{ralign 7:{res:{sf: -0.168}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.006}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.001}}}{space 1}
+{space 4}{hline 13}{c   +}{hline 9}{hline 9}{hline 9}
+{space 4}{res:{lalign 13:condop_g}}{c |}{space 9}{space 9}{space 9}
+{space 4}{space 0}{ralign 12:False}{space 1}{c |}{space 1}{ralign 7:{res:{sf: -0.293}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.007}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.003}}}{space 1}
+{space 4}{space 0}{ralign 12:True}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  0.439}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.007}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.005}}}{space 1}
+{space 4}{hline 13}{c   +}{hline 9}{hline 9}{hline 9}
+{space 4}{res:{lalign 13:condop_h}}{c |}{space 9}{space 9}{space 9}
+{space 4}{space 0}{ralign 12:False}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  0.023}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.000}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.000}}}{space 1}
+{space 4}{space 0}{ralign 12:True}{space 1}{c |}{space 1}{ralign 7:{res:{sf: -0.059}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.000}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.000}}}{space 1}
+{space 4}{hline 13}{c   +}{hline 9}{hline 9}{hline 9}
+{space 4}{res:{lalign 13:condop_i}}{c |}{space 9}{space 9}{space 9}
+{space 4}{space 0}{ralign 12:False}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  0.832}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.027}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.019}}}{space 1}
+{space 4}{space 0}{ralign 12:True}{space 1}{c |}{space 1}{ralign 7:{res:{sf: -0.763}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.027}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.018}}}{space 1}
+{space 4}{hline 13}{c   +}{hline 9}{hline 9}{hline 9}
+{space 4}{res:{lalign 13:condop_j}}{c |}{space 9}{space 9}{space 9}
+{space 4}{space 0}{ralign 12:False}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  4.513}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.184}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.093}}}{space 1}
+{space 4}{space 0}{ralign 12:True}{space 1}{c |}{space 1}{ralign 7:{res:{sf: -0.381}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.184}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.008}}}{space 1}
+{space 4}{hline 13}{c   +}{hline 9}{hline 9}{hline 9}
+{space 4}{res:{lalign 13:condop_k}}{c |}{space 9}{space 9}{space 9}
+{space 4}{space 0}{ralign 12:False}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  0.246}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.015}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.003}}}{space 1}
+{space 4}{space 0}{ralign 12:True}{space 1}{c |}{space 1}{ralign 7:{res:{sf: -0.649}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.015}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.007}}}{space 1}
+{space 4}{hline 13}{c   +}{hline 9}{hline 9}{hline 9}
+{space 4}{res:{lalign 13:condop_l}}{c |}{space 9}{space 9}{space 9}
+{space 4}{space 0}{ralign 12:False}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  0.976}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.037}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.029}}}{space 1}
+{space 4}{space 0}{ralign 12:True}{space 1}{c |}{space 1}{ralign 7:{res:{sf: -1.052}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.037}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.031}}}{space 1}
+{space 4}{hline 13}{c   +}{hline 9}{hline 9}{hline 9}
+{space 4}{res:{lalign 13:condop_m}}{c |}{space 9}{space 9}{space 9}
+{space 4}{space 0}{ralign 12:False}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  0.120}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.004}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.001}}}{space 1}
+{space 4}{space 0}{ralign 12:True}{space 1}{c |}{space 1}{ralign 7:{res:{sf: -0.711}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.004}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.004}}}{space 1}
+{space 4}{hline 13}{c   +}{hline 9}{hline 9}{hline 9}
+{space 4}{res:{lalign 13:condop_n}}{c |}{space 9}{space 9}{space 9}
+{space 4}{space 0}{ralign 12:False}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  8.978}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.623}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.067}}}{space 1}
+{space 4}{space 0}{ralign 12:True}{space 1}{c |}{space 1}{ralign 7:{res:{sf: -0.129}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.623}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.001}}}{space 1}
+{space 4}{hline 13}{c   +}{hline 9}{hline 9}{hline 9}
+{space 4}{res:{lalign 13:condop_o}}{c |}{space 9}{space 9}{space 9}
+{space 4}{space 0}{ralign 12:False}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  0.274}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.042}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.003}}}{space 1}
+{space 4}{space 0}{ralign 12:True}{space 1}{c |}{space 1}{ralign 7:{res:{sf: -0.626}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.042}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.007}}}{space 1}
+{space 4}{hline 13}{c   +}{hline 9}{hline 9}{hline 9}
+{space 4}{res:{lalign 13:condop_p}}{c |}{space 9}{space 9}{space 9}
+{space 4}{space 0}{ralign 12:False}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  0.056}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.078}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.000}}}{space 1}
+{space 4}{space 0}{ralign 12:True}{space 1}{c |}{space 1}{ralign 7:{res:{sf: -3.219}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.078}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.010}}}{space 1}
+{space 4}{hline 13}{c   +}{hline 9}{hline 9}{hline 9}
+{space 4}{res:{lalign 13:condop_q}}{c |}{space 9}{space 9}{space 9}
+{space 4}{space 0}{ralign 12:False}{space 1}{c |}{space 1}{ralign 7:{res:{sf: -0.004}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.000}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.000}}}{space 1}
+{space 4}{space 0}{ralign 12:True}{space 1}{c |}{space 1}{ralign 7:{res:{sf:  0.001}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.000}}}{space 1}{space 1}{ralign 7:{res:{sf:  0.000}}}{space 1}
+{space 4}{hline 13}{c  BT}{hline 9}{hline 9}{hline 9}
+
+
+{com}. predict condop_index
+{txt}(option rowscores assumed)
+{res}{txt}(3 missing values generated)
+
+{com}. 
+. /* ===============================================================
+>    ============ Label Cleaned Variables and Categories ===========
+>    =============================================================== */
+. 
+. #delimit ;
+{txt}delimiter now ;
+{com}. label define educ 
+>     0 "Primary"
+>         1 "Secondary" 
+>         2 "Higher" ;
+{txt}
+{com}. label define house_members 
+>     0 "Alone" 
+>         1 "Parents" 
+>         2 "Other family" 
+>         3 "Spouse" 
+>         4 "Roommates/non Family" 
+>         5 "With significant other" ;
+{txt}
+{com}.         label define percpoor
+>     0 "0% - 10%"
+>         1 "10% - 20%"
+>         2 "{c -(}&ge{c )-}20%";
+{txt}
+{com}.     label define cont
+>     0 "None/Traditional"
+>         1 "Modern Method"
+>         2 "LARC/LAPM Method";
+{txt}
+{com}.         label def mar 
+>     0 "Unmarried" 
+>         1 "Married";
+{txt}
+{com}. label def children
+>     0 "None"
+>         1 "1 or more";
+{txt}
+{com}.         label def partners
+>     1 "1"
+>         2 "2-3"
+>         3 "3-5"
+>         4 "5+";
+{txt}
+{com}.         label def times1mo
+>     0 "0"
+>         1 "1"
+>         2 "2-3"
+>         3 "3-5"
+>         4 "5+";
+{txt}
+{com}. label def sexage
+>     0 "< 18"
+>         1 ">= 18";
+{txt}
+{com}. label def dist
+>     0 "< 2.5 km"
+>         1 ">= 2.5 km";
+{txt}
+{com}. label def times
+>     0 "< 20 min"
+>         1 "20 - 40 min" 
+>         2 "> 40 min";
+{txt}
+{com}. #delimit cr
+{txt}delimiter now cr
+{com}. 
+. label values educ educ
+{txt}
+{com}. label values contother cont
+{txt}
+{com}. label values sti yesno
+{txt}
+{com}. label values married mar
+{txt}
+{com}. label values lives_alone yesno
+{txt}
+{com}. label values nchildren children
+{txt}
+{com}. label values npartners partners
+{txt}
+{com}. label values nintercourse times1mo
+{txt}
+{com}. label values firstsex sexage
+{txt}
+{com}. label values nearHF dist
+{txt}
+{com}. label values traveltime times
+{txt}
+{com}. label values poverty percpoor
+{txt}
+{com}. label values contspkpartnerrecent yesno
+{txt}
+{com}. label values contagree yesno
+{txt}
+{com}. 
+. * variable labels
+. label variable gender        "Gender"
+{txt}
+{com}. label variable age           "Age"
+{txt}
+{com}. label variable edustatus     "Currently in School"
+{txt}
+{com}. label variable educ          "Educational Attainment"
+{txt}
+{com}. label variable employmt      "Employment Status"
+{txt}
+{com}. label variable married       "Marital Status"
+{txt}
+{com}. label variable lives_alone   "Lives Alone"
+{txt}
+{com}. label variable sexage        "Age at first sexual intercourse"
+{txt}
+{com}. label variable firstsex      "Age at first sexual intercourse (cat)"
+{txt}
+{com}. label variable sexpartnernum "Number of lifetime sex partners"
+{txt}
+{com}. label variable npartners     "Number of lifetime sex partners (cat)"
+{txt}
+{com}. label variable sexpartner1mo "Number of times engaged in sex in last 30 days"
+{txt}
+{com}. label variable nintercourse  "Number of times engaged in sex in last 30 days (cat)"
+{txt}
+{com}. label variable childnum      "Number of children"
+{txt}
+{com}. label variable nchildren     "Number of children (cat)"
+{txt}
+{com}. label variable sti           "Ever tested for an STI?"
+{txt}
+{com}. label variable nearHF        "Distance to nearest health facility"
+{txt}
+{com}. label variable traveltime    "Time to contraceptive dispensary"
+{txt}
+{com}. label variable contother     "Other contraceptives used (ever)"
+{txt}
+{com}. label variable cond6mo       "Male condom use in the last 6 months"
+{txt}
+{com}. label variable salary        "Income, last 30 days (kwacha)"
+{txt}
+{com}. label variable religiosity   "Religiosity"
+{txt}
+{com}. label variable condop_index  "Negative perception of condom use index"
+{txt}
+{com}. label variable poverty       "Poverty rate, ward-level"
+{txt}
+{com}. 
+. /* ===============================================================
+>    ============== Save Clean Data for Tables/Figures =============
+>    =============================================================== */
+. 
+. * dta file for table 1
+. 
+. #delimit ;
+{txt}delimiter now ;
+{com}. keep gender
+>      age
+>          edustatus
+>          educ
+>          employmt
+>          married
+>          sexage
+>          sexpartnernum
+>          sexpartner1mo
+>          nchildren
+>          childnum
+>          sti
+>          contother
+>          ncontknow
+>          contspkpartnerrecent
+>          contagree
+>          condop_m
+>          condop_index
+>          cond6mo
+>          condlast
+>          ward
+>          nearHF
+>          facility_km
+>          poverty
+>          qnum;
+{txt}
+{com}. #delimit cr
+{txt}delimiter now cr
+{com}. 
+. save "${c -(}data{c )-}/maximum_diva_02_cleaned.dta", replace
+{txt}file C:/Users/cboyer.IPA/Desktop/GitHub/PSI-Womens-Condom/data/maximum_diva_02_cleaned.dta saved
+
+{com}. 
+. 
+. 
+{txt}end of do-file
+
+{com}. do 2_table1.do
+{txt}
+{com}. /*========================================
+>   file:    2_table1.do                    
+>   authors: christopher boyer            
+>            innovations for poverty action  
+>   date:    2016-12-18                     
+>   ========================================*/
+.  
+.  /* this file creates table 1 a summary of demographic
+>     and sexual and reproductive health history characterstics of 
+>         the study population by contraceptive use.
+>  */
+.  
+. use "${c -(}data{c )-}/maximum_diva_02_cleaned.dta", clear
+{txt}
+{com}. 
+. #delimit ;
+{txt}delimiter now ;
+{com}. table1, by(condlast) 
+>     saving("${c -(}tables{c )-}/table_01.xlsx", replace)
+>         plusminus
+>         test
+>         format(%4.2f)
+>     vars(gender cat \
+>              age contn \ 
+>                  edustatus cat \
+>                  educ cat \
+>                  employmt cat \
+>          married cat \
+>                  poverty cat \
+>          sexage contn \
+>                  sexpartnernum contn\
+>                  sexpartner1mo contn\
+>              nchildren cat \
+>          sti cat \ 
+>                  contother cat \
+>                  nearHF cat \
+>                  ncontknow cat \
+>                  contspkpartnerrecent cat \
+>                  contagree cat \
+>                  condop_m cat \
+>                  condop_index contn );
+{res}{txt}  {c TLC}{hline 69}{c -}{hline 18}{c -}{hline 14}{c -}{hline 14}{c -}{hline 9}{c -}{hline 23}{c TRC}
+  {c |} {res}Factor                                                                Level              No             Yes            p-value   Test                  {txt}{c |}
+  {c LT}{hline 69}{c -}{hline 18}{c -}{hline 14}{c -}{hline 14}{c -}{hline 9}{c -}{hline 23}{c RT}
+  {c |} {res}N                                                                                        1415           973                                            {txt}{c |}
+  {c LT}{hline 69}{c -}{hline 18}{c -}{hline 14}{c -}{hline 14}{c -}{hline 9}{c -}{hline 23}{c RT}
+  {c |} {res}Gender                                                                0                  290 (20.5%)    452 (46.5%)     <0.001   Pearson's chi-squared {txt}{c |}
+  {c |} {res}                                                                      1                  1125 (79.5%)   521 (53.5%)                                    {txt}{c |}
+  {c LT}{hline 69}{c -}{hline 18}{c -}{hline 14}{c -}{hline 14}{c -}{hline 9}{c -}{hline 23}{c RT}
+  {c |} {res}Age, mean ± SD                                                                           21.34 ± 1.93   21.27 ± 1.95      0.41   Two sample t test     {txt}{c |}
+  {c LT}{hline 69}{c -}{hline 18}{c -}{hline 14}{c -}{hline 14}{c -}{hline 9}{c -}{hline 23}{c RT}
+  {c |} {res}Currently in School                                                   No                 1156 (81.7%)   705 (72.5%)     <0.001   Pearson's chi-squared {txt}{c |}
+  {c |} {res}                                                                      Yes                259 (18.3%)    268 (27.5%)                                    {txt}{c |}
+  {c LT}{hline 69}{c -}{hline 18}{c -}{hline 14}{c -}{hline 14}{c -}{hline 9}{c -}{hline 23}{c RT}
+  {c |} {res}Educational Attainment                                                Primary            388 (27.4%)    132 (13.6%)     <0.001   Pearson's chi-squared {txt}{c |}
+  {c |} {res}                                                                      Secondary          899 (63.5%)    627 (64.5%)                                    {txt}{c |}
+  {c |} {res}                                                                      Higher             128 (9.0%)     213 (21.9%)                                    {txt}{c |}
+  {c LT}{hline 69}{c -}{hline 18}{c -}{hline 14}{c -}{hline 14}{c -}{hline 9}{c -}{hline 23}{c RT}
+  {c |} {res}Employment Status                                                     No                 1175 (83.0%)   719 (73.9%)     <0.001   Pearson's chi-squared {txt}{c |}
+  {c |} {res}                                                                      Yes                240 (17.0%)    254 (26.1%)                                    {txt}{c |}
+  {c LT}{hline 69}{c -}{hline 18}{c -}{hline 14}{c -}{hline 14}{c -}{hline 9}{c -}{hline 23}{c RT}
+  {c |} {res}Marital Status                                                        Unmarried          698 (49.3%)    849 (87.3%)     <0.001   Pearson's chi-squared {txt}{c |}
+  {c |} {res}                                                                      Married            717 (50.7%)    124 (12.7%)                                    {txt}{c |}
+  {c LT}{hline 69}{c -}{hline 18}{c -}{hline 14}{c -}{hline 14}{c -}{hline 9}{c -}{hline 23}{c RT}
+  {c |} {res}Poverty rate, ward-level                                              0% - 10%           161 (11.4%)    249 (25.6%)     <0.001   Pearson's chi-squared {txt}{c |}
+  {c |} {res}                                                                      10% - 20%          484 (34.2%)    361 (37.1%)                                    {txt}{c |}
+  {c |} {res}                                                                      {c -(}&ge{c )-}20%           770 (54.4%)    363 (37.3%)                                    {txt}{c |}
+  {c LT}{hline 69}{c -}{hline 18}{c -}{hline 14}{c -}{hline 14}{c -}{hline 9}{c -}{hline 23}{c RT}
+  {c |} {res}Age at first sexual intercourse, mean ± SD                                               17.33 ± 2.33   17.25 ± 2.48      0.41   Two sample t test     {txt}{c |}
+  {c LT}{hline 69}{c -}{hline 18}{c -}{hline 14}{c -}{hline 14}{c -}{hline 9}{c -}{hline 23}{c RT}
+  {c |} {res}Number of lifetime sex partners, mean ± SD                                               2.81 ± 4.64    4.38 ± 7.75     <0.001   Two sample t test     {txt}{c |}
+  {c LT}{hline 69}{c -}{hline 18}{c -}{hline 14}{c -}{hline 14}{c -}{hline 9}{c -}{hline 23}{c RT}
+  {c |} {res}Number of times engaged in sex in last 30 days, mean ± SD                                4.05 ± 6.33    2.64 ± 5.13     <0.001   Two sample t test     {txt}{c |}
+  {c LT}{hline 69}{c -}{hline 18}{c -}{hline 14}{c -}{hline 14}{c -}{hline 9}{c -}{hline 23}{c RT}
+  {c |} {res}Number of children (cat)                                              None               522 (37.6%)    628 (68.2%)     <0.001   Pearson's chi-squared {txt}{c |}
+  {c |} {res}                                                                      1 or more          868 (62.4%)    293 (31.8%)                                    {txt}{c |}
+  {c LT}{hline 69}{c -}{hline 18}{c -}{hline 14}{c -}{hline 14}{c -}{hline 9}{c -}{hline 23}{c RT}
+  {c |} {res}Ever tested for an STI?                                               No                 265 (18.7%)    227 (23.3%)      0.006   Pearson's chi-squared {txt}{c |}
+  {c |} {res}                                                                      Yes                1150 (81.3%)   746 (76.7%)                                    {txt}{c |}
+  {c LT}{hline 69}{c -}{hline 18}{c -}{hline 14}{c -}{hline 14}{c -}{hline 9}{c -}{hline 23}{c RT}
+  {c |} {res}Other contraceptives used (ever)                                      None/Traditional   528 (37.3%)    507 (52.1%)     <0.001   Pearson's chi-squared {txt}{c |}
+  {c |} {res}                                                                      Modern Method      713 (50.4%)    390 (40.1%)                                    {txt}{c |}
+  {c |} {res}                                                                      LARC/LAPM Method   174 (12.3%)    76 (7.8%)                                      {txt}{c |}
+  {c LT}{hline 69}{c -}{hline 18}{c -}{hline 14}{c -}{hline 14}{c -}{hline 9}{c -}{hline 23}{c RT}
+  {c |} {res}Distance to nearest health facility                                   < 2.5 km           1086 (79.7%)   832 (88.9%)     <0.001   Pearson's chi-squared {txt}{c |}
+  {c |} {res}                                                                      >= 2.5 km          277 (20.3%)    104 (11.1%)                                    {txt}{c |}
+  {c LT}{hline 69}{c -}{hline 18}{c -}{hline 14}{c -}{hline 14}{c -}{hline 9}{c -}{hline 23}{c RT}
+  {c |} {res}ncontknow                                                             0                  509 (36.0%)    398 (40.9%)      0.015   Pearson's chi-squared {txt}{c |}
+  {c |} {res}                                                                      1                  906 (64.0%)    575 (59.1%)                                    {txt}{c |}
+  {c LT}{hline 69}{c -}{hline 18}{c -}{hline 14}{c -}{hline 14}{c -}{hline 9}{c -}{hline 23}{c RT}
+  {c |} {res}S17. Have you discussed contraceptive use with your most recent s..   No                 454 (32.3%)    278 (28.6%)      0.054   Pearson's chi-squared {txt}{c |}
+  {c |} {res}                                                                      Yes                950 (67.7%)    693 (71.4%)                                    {txt}{c |}
+  {c LT}{hline 69}{c -}{hline 18}{c -}{hline 14}{c -}{hline 14}{c -}{hline 9}{c -}{hline 23}{c RT}
+  {c |} {res}S19. Do you and your sexual partner(s) agree at present on whethe..   No                 415 (30.1%)    215 (22.5%)     <0.001   Pearson's chi-squared {txt}{c |}
+  {c |} {res}                                                                      Yes                964 (69.9%)    741 (77.5%)                                    {txt}{c |}
+  {c LT}{hline 69}{c -}{hline 18}{c -}{hline 14}{c -}{hline 14}{c -}{hline 9}{c -}{hline 23}{c RT}
+  {c |} {res}C16. M. Male condoms are for sex workers                               False             961 (77.3%)    829 (90.7%)     <0.001   Pearson's chi-squared {txt}{c |}
+  {c |} {res}                                                                       True              282 (22.7%)    85 (9.3%)                                      {txt}{c |}
+  {c LT}{hline 69}{c -}{hline 18}{c -}{hline 14}{c -}{hline 14}{c -}{hline 9}{c -}{hline 23}{c RT}
+  {c |} {res}Negative perception of condom use index, mean ± SD                                       0.26 ± 1.11    -0.13 ± 0.94    <0.001   Two sample t test     {txt}{c |}
+  {c BLC}{hline 69}{c -}{hline 18}{c -}{hline 14}{c -}{hline 14}{c -}{hline 9}{c -}{hline 23}{c BRC}
+{res}{txt}file C:/Users/cboyer.IPA/Desktop/GitHub/PSI-Womens-Condom/tables/table_01.xlsx saved
+
+{com}. #delimit cr
+{txt}delimiter now cr
+{com}. 
+{txt}end of do-file
+
+{com}. do 3_impute.do
+{txt}
+{com}. /*========================================
+>   file:    3_impute.do                    
+>   author:  christopher boyer             
+>            innovations for poverty action  
+>   date:    2016-12-18                      
+>   ========================================*/
+.  
+.  /* this file imputes multiple values for missing survey
+>     responses using the chained equations estimator from
+>         the -mi- system. we impute 50 random data sets to increase
+>         stability of pooled estimates (caution takes a while to run).
+>  */
+.  
+. use "${c -(}data{c )-}/maximum_diva_02_cleaned.dta", replace
+{txt}
+{com}.  
+. /* =============================================================== 
+>    ==================== Multiple Imputation ====================== 
+>    =============================================================== */
+. 
+. // set the random seed (digit from dollar bill)
+. set seed 28106935
+{txt}
+{com}. 
+. ds, has(type numeric)
+{txt}{col 1}ward{col 15}condop_m{col 29}sexage{col 43}educ{col 57}nearHF
+{col 1}gender{col 15}cond6mo{col 29}sexpartner~m{col 43}married{col 57}contother
+{col 1}age{col 15}condlast{col 29}sexpartner~o{col 43}poverty{col 57}ncontknow
+{col 1}edustatus{col 15}contspkpar~t{col 29}childnum{col 43}nchildren{col 57}condop_index
+{col 1}employmt{col 15}contagree{col 29}facility_km{col 43}sti
+
+{com}. local numeric `r(varlist)'
+{txt}
+{com}. recode `numeric' (.d = .)
+{txt}(ward: 0 changes made)
+(gender: 0 changes made)
+(age: 0 changes made)
+(edustatus: 0 changes made)
+(employmt: 0 changes made)
+(condop_m: 231 changes made)
+(cond6mo: 0 changes made)
+(condlast: 0 changes made)
+(contspkpartnerrecent: 2 changes made)
+(contagree: 32 changes made)
+(sexage: 64 changes made)
+(sexpartnernum: 39 changes made)
+(sexpartner1mo: 280 changes made)
+(childnum: 58 changes made)
+(facility_km: 0 changes made)
+(educ: 0 changes made)
+(married: 0 changes made)
+(poverty: 0 changes made)
+(nchildren: 58 changes made)
+(sti: 0 changes made)
+(nearHF: 0 changes made)
+(contother: 0 changes made)
+(ncontknow: 0 changes made)
+(condop_index: 0 changes made)
+
+{com}. recode `numeric' (.r = .)
+{txt}(ward: 0 changes made)
+(gender: 0 changes made)
+(age: 0 changes made)
+(edustatus: 0 changes made)
+(employmt: 0 changes made)
+(condop_m: 0 changes made)
+(cond6mo: 0 changes made)
+(condlast: 0 changes made)
+(contspkpartnerrecent: 11 changes made)
+(contagree: 21 changes made)
+(sexage: 18 changes made)
+(sexpartnernum: 23 changes made)
+(sexpartner1mo: 46 changes made)
+(childnum: 19 changes made)
+(facility_km: 0 changes made)
+(educ: 0 changes made)
+(married: 0 changes made)
+(poverty: 0 changes made)
+(nchildren: 19 changes made)
+(sti: 0 changes made)
+(nearHF: 0 changes made)
+(contother: 0 changes made)
+(ncontknow: 0 changes made)
+(condop_index: 0 changes made)
+
+{com}. 
+. // register the variables with missing values to be imputed
+. mi set wide
+{txt}
+{com}. mi register imputed              ///
+>             educ                 ///
+>                         sexage               ///
+>                         facility_km          ///
+>                         sexpartnernum        ///
+>                         sexpartner1mo        ///
+>                         childnum             ///
+>                         contspkpartnerrecent ///
+>                         contagree            ///        
+>                         condop_m             ///
+>                         condop_index
+{txt}
+{com}. 
+. // impute 50 data sets
+. mi impute chained                                               ///
+>     (mlogit)  educ                                              ///
+>     (logit)   contspkpartnerrecent condop_m contagree           ///
+>         (poisson) childnum                                          ///
+>         (regress) facility_km sexage sexpartnernum sexpartner1mo condop_index = ///
+>         gender edustatus employmt married sti contother ward, ///
+>         add(50) augment dots
+{res}
+{txt}Conditional models:
+{p 14 21 2}
+{bf:educ}: mlogit educ condop_index i.contspkpartnerrecent i.contagree sexpartnernum childnum sexage facility_km i.condop_m sexpartner1mo gender edustatus employmt married sti contother ward , augment
+{p_end}
+{p 6 21 2}
+{bf:condop_index}: regress condop_index i.educ i.contspkpartnerrecent i.contagree sexpartnernum childnum sexage facility_km i.condop_m sexpartner1mo gender edustatus employmt married sti contother ward
+{p_end}
+{p 4 21 2}
+{bf:contspkpartn~t}: logit contspkpartnerrecent i.educ condop_index i.contagree sexpartnernum childnum sexage facility_km i.condop_m sexpartner1mo gender edustatus employmt married sti contother ward , augment
+{p_end}
+{p 9 21 2}
+{bf:contagree}: logit contagree i.educ condop_index i.contspkpartnerrecent sexpartnernum childnum sexage facility_km i.condop_m sexpartner1mo gender edustatus employmt married sti contother ward , augment
+{p_end}
+{p 5 21 2}
+{bf:sexpartnernum}: regress sexpartnernum i.educ condop_index i.contspkpartnerrecent i.contagree childnum sexage facility_km i.condop_m sexpartner1mo gender edustatus employmt married sti contother ward
+{p_end}
+{p 10 21 2}
+{bf:childnum}: poisson childnum i.educ condop_index i.contspkpartnerrecent i.contagree sexpartnernum sexage facility_km i.condop_m sexpartner1mo gender edustatus employmt married sti contother ward
+{p_end}
+{p 12 21 2}
+{bf:sexage}: regress sexage i.educ condop_index i.contspkpartnerrecent i.contagree sexpartnernum childnum facility_km i.condop_m sexpartner1mo gender edustatus employmt married sti contother ward
+{p_end}
+{p 7 21 2}
+{bf:facility_km}: regress facility_km i.educ condop_index i.contspkpartnerrecent i.contagree sexpartnernum childnum sexage i.condop_m sexpartner1mo gender edustatus employmt married sti contother ward
+{p_end}
+{p 10 21 2}
+{bf:condop_m}: logit condop_m i.educ condop_index i.contspkpartnerrecent i.contagree sexpartnernum childnum sexage facility_km sexpartner1mo gender edustatus employmt married sti contother ward , augment
+{p_end}
+{p 5 21 2}
+{bf:sexpartner1mo}: regress sexpartner1mo i.educ condop_index i.contspkpartnerrecent i.contagree sexpartnernum childnum sexage facility_km i.condop_m gender edustatus employmt married sti contother ward
+{p_end}
+
+{res}{txt}Performing chained iterations:
+{col 3}imputing {it:m}=1 through {it:m}=50 {res}{txt}.{res}{txt}.{res}{txt}.{res}{txt}.{res}{txt}.{res}{txt}.{res}{txt}.{res}{txt}.{res}{txt}.{res}{txt}10{res}{txt}.{res}{txt}.{res}{txt}.{res}{txt}.{res}{txt}.{res}{txt}.{res}{txt}.{res}{txt}.{res}{txt}.{res}{txt}20{res}{txt}.{res}{txt}.{res}{txt}.{res}{txt}.{res}{txt}.{res}{txt}.{res}{txt}.{res}{txt}.{res}{txt}.{res}{txt}30{res}{txt}.{res}{txt}.{res}{txt}.{res}{txt}.{res}{txt}.{res}{txt}.{res}{txt}.{res}{txt}.{res}{txt}.{res}{txt}40{res}{txt}.{res}{txt}.{res}{txt}.{res}{txt}.{res}{txt}.{res}{txt}.{res}{txt}.{res}{txt}.{res}{txt}.{res}{txt}50 done
+{res}{txt}
+Multivariate imputation{txt}{col 45}{ralign 12:Imputations }= {res}      50
+{txt}Chained equations{txt}{col 45}{ralign 12:added }= {res}      50
+{txt}Imputed: {it:m}=1 through {it:m}=50{txt}{col 45}{ralign 12:updated }= {res}       0
+
+{txt}Initialization: {res}monotone{txt}{col 45}{ralign 12:Iterations }= {res}     500
+{txt}{col 45}{ralign 12:burn-in }= {res}      10
+
+{txt}{p 14 15 2}{bf:educ}: multinomial logistic regression{p_end}
+{txt}{p 4 15 2}{bf:contspkpartn~t}: logistic regression{p_end}
+{txt}{p 10 15 2}{bf:condop_m}: logistic regression{p_end}
+{txt}{p 9 15 2}{bf:contagree}: logistic regression{p_end}
+{txt}{p 10 15 2}{bf:childnum}: poisson regression{p_end}
+{txt}{p 7 15 2}{bf:facility_km}: linear regression{p_end}
+{txt}{p 12 15 2}{bf:sexage}: linear regression{p_end}
+{txt}{p 5 15 2}{bf:sexpartnernum}: linear regression{p_end}
+{txt}{p 5 15 2}{bf:sexpartner1mo}: linear regression{p_end}
+{txt}{p 6 15 2}{bf:condop_index}: linear regression{p_end}
+
+{txt}{hline 19}{c TT}{hline 35}{hline 11}
+{txt}{col 20}{c |}{center 46:  Observations per {it:m}}
+{txt}{col 20}{c LT}{hline 35}{c TT}{hline 10}
+{txt}{col 11}Variable {c |}{ralign 12:Complete }{ralign 13:Incomplete }{ralign 10:Imputed }{c |}{ralign 10:Total}
+{hline 19}{c +}{hline 35}{c +}{hline 10}
+{txt}{ralign 19:educ }{c |}{res}       2387            1         1 {txt}{c |}{res}      2388
+{txt}{ralign 19:contspkpartn~t }{c |}{res}       2375           13        13 {txt}{c |}{res}      2388
+{txt}{ralign 19:condop_m }{c |}{res}       2157          231       231 {txt}{c |}{res}      2388
+{txt}{ralign 19:contagree }{c |}{res}       2335           53        53 {txt}{c |}{res}      2388
+{txt}{ralign 19:childnum }{c |}{res}       2311           77        77 {txt}{c |}{res}      2388
+{txt}{ralign 19:facility_km }{c |}{res}       2299           89        89 {txt}{c |}{res}      2388
+{txt}{ralign 19:sexage }{c |}{res}       2306           82        82 {txt}{c |}{res}      2388
+{txt}{ralign 19:sexpartnernum }{c |}{res}       2326           62        62 {txt}{c |}{res}      2388
+{txt}{ralign 19:sexpartner1mo }{c |}{res}       2053          335       335 {txt}{c |}{res}      2388
+{txt}{ralign 19:condop_index }{c |}{res}       2385            3         3 {txt}{c |}{res}      2388
+{txt}{hline 19}{c BT}{hline 35}{c BT}{hline 10}
+{p 0 1 1 66}(complete + incomplete = total; imputed is the minimum across {it:m}
+ of the number of filled-in observations.){p_end}
+{res}{txt}
+{com}. 
+. 
+. /* nearHF - categorize facility_km */
+. drop nearHF
+{txt}
+{com}. mi passive: g nearHF = .
+{res}{txt}{it:m}=0:
+(2388 missing values generated)
+{res}{txt}{it:m}=1:
+(2388 missing values generated)
+{res}{txt}{it:m}=2:
+(2388 missing values generated)
+{res}{txt}{it:m}=3:
+(2388 missing values generated)
+{res}{txt}{it:m}=4:
+(2388 missing values generated)
+{res}{txt}{it:m}=5:
+(2388 missing values generated)
+{res}{txt}{it:m}=6:
+(2388 missing values generated)
+{res}{txt}{it:m}=7:
+(2388 missing values generated)
+{res}{txt}{it:m}=8:
+(2388 missing values generated)
+{res}{txt}{it:m}=9:
+(2388 missing values generated)
+{res}{txt}{it:m}=10:
+(2388 missing values generated)
+{res}{txt}{it:m}=11:
+(2388 missing values generated)
+{res}{txt}{it:m}=12:
+(2388 missing values generated)
+{res}{txt}{it:m}=13:
+(2388 missing values generated)
+{res}{txt}{it:m}=14:
+(2388 missing values generated)
+{res}{txt}{it:m}=15:
+(2388 missing values generated)
+{res}{txt}{it:m}=16:
+(2388 missing values generated)
+{res}{txt}{it:m}=17:
+(2388 missing values generated)
+{res}{txt}{it:m}=18:
+(2388 missing values generated)
+{res}{txt}{it:m}=19:
+(2388 missing values generated)
+{res}{txt}{it:m}=20:
+(2388 missing values generated)
+{res}{txt}{it:m}=21:
+(2388 missing values generated)
+{res}{txt}{it:m}=22:
+(2388 missing values generated)
+{res}{txt}{it:m}=23:
+(2388 missing values generated)
+{res}{txt}{it:m}=24:
+(2388 missing values generated)
+{res}{txt}{it:m}=25:
+(2388 missing values generated)
+{res}{txt}{it:m}=26:
+(2388 missing values generated)
+{res}{txt}{it:m}=27:
+(2388 missing values generated)
+{res}{txt}{it:m}=28:
+(2388 missing values generated)
+{res}{txt}{it:m}=29:
+(2388 missing values generated)
+{res}{txt}{it:m}=30:
+(2388 missing values generated)
+{res}{txt}{it:m}=31:
+(2388 missing values generated)
+{res}{txt}{it:m}=32:
+(2388 missing values generated)
+{res}{txt}{it:m}=33:
+(2388 missing values generated)
+{res}{txt}{it:m}=34:
+(2388 missing values generated)
+{res}{txt}{it:m}=35:
+(2388 missing values generated)
+{res}{txt}{it:m}=36:
+(2388 missing values generated)
+{res}{txt}{it:m}=37:
+(2388 missing values generated)
+{res}{txt}{it:m}=38:
+(2388 missing values generated)
+{res}{txt}{it:m}=39:
+(2388 missing values generated)
+{res}{txt}{it:m}=40:
+(2388 missing values generated)
+{res}{txt}{it:m}=41:
+(2388 missing values generated)
+{res}{txt}{it:m}=42:
+(2388 missing values generated)
+{res}{txt}{it:m}=43:
+(2388 missing values generated)
+{res}{txt}{it:m}=44:
+(2388 missing values generated)
+{res}{txt}{it:m}=45:
+(2388 missing values generated)
+{res}{txt}{it:m}=46:
+(2388 missing values generated)
+{res}{txt}{it:m}=47:
+(2388 missing values generated)
+{res}{txt}{it:m}=48:
+(2388 missing values generated)
+{res}{txt}{it:m}=49:
+(2388 missing values generated)
+{res}{txt}{it:m}=50:
+(2388 missing values generated)
+{res}{txt}
+{com}. mi passive: replace nearHF = 0 if facility_km < 2.5
+{res}{txt}{it:m}=0:
+(1918 real changes made)
+{res}{txt}{it:m}=1:
+(1977 real changes made)
+{res}{txt}{it:m}=2:
+(1977 real changes made)
+{res}{txt}{it:m}=3:
+(1981 real changes made)
+{res}{txt}{it:m}=4:
+(1980 real changes made)
+{res}{txt}{it:m}=5:
+(1978 real changes made)
+{res}{txt}{it:m}=6:
+(1982 real changes made)
+{res}{txt}{it:m}=7:
+(1975 real changes made)
+{res}{txt}{it:m}=8:
+(1982 real changes made)
+{res}{txt}{it:m}=9:
+(1983 real changes made)
+{res}{txt}{it:m}=10:
+(1983 real changes made)
+{res}{txt}{it:m}=11:
+(1977 real changes made)
+{res}{txt}{it:m}=12:
+(1975 real changes made)
+{res}{txt}{it:m}=13:
+(1983 real changes made)
+{res}{txt}{it:m}=14:
+(1983 real changes made)
+{res}{txt}{it:m}=15:
+(1982 real changes made)
+{res}{txt}{it:m}=16:
+(1983 real changes made)
+{res}{txt}{it:m}=17:
+(1977 real changes made)
+{res}{txt}{it:m}=18:
+(1981 real changes made)
+{res}{txt}{it:m}=19:
+(1978 real changes made)
+{res}{txt}{it:m}=20:
+(1977 real changes made)
+{res}{txt}{it:m}=21:
+(1983 real changes made)
+{res}{txt}{it:m}=22:
+(1982 real changes made)
+{res}{txt}{it:m}=23:
+(1985 real changes made)
+{res}{txt}{it:m}=24:
+(1969 real changes made)
+{res}{txt}{it:m}=25:
+(1984 real changes made)
+{res}{txt}{it:m}=26:
+(1970 real changes made)
+{res}{txt}{it:m}=27:
+(1975 real changes made)
+{res}{txt}{it:m}=28:
+(1983 real changes made)
+{res}{txt}{it:m}=29:
+(1981 real changes made)
+{res}{txt}{it:m}=30:
+(1980 real changes made)
+{res}{txt}{it:m}=31:
+(1976 real changes made)
+{res}{txt}{it:m}=32:
+(1976 real changes made)
+{res}{txt}{it:m}=33:
+(1978 real changes made)
+{res}{txt}{it:m}=34:
+(1986 real changes made)
+{res}{txt}{it:m}=35:
+(1967 real changes made)
+{res}{txt}{it:m}=36:
+(1979 real changes made)
+{res}{txt}{it:m}=37:
+(1970 real changes made)
+{res}{txt}{it:m}=38:
+(1971 real changes made)
+{res}{txt}{it:m}=39:
+(1977 real changes made)
+{res}{txt}{it:m}=40:
+(1978 real changes made)
+{res}{txt}{it:m}=41:
+(1974 real changes made)
+{res}{txt}{it:m}=42:
+(1980 real changes made)
+{res}{txt}{it:m}=43:
+(1979 real changes made)
+{res}{txt}{it:m}=44:
+(1969 real changes made)
+{res}{txt}{it:m}=45:
+(1985 real changes made)
+{res}{txt}{it:m}=46:
+(1983 real changes made)
+{res}{txt}{it:m}=47:
+(1985 real changes made)
+{res}{txt}{it:m}=48:
+(1980 real changes made)
+{res}{txt}{it:m}=49:
+(1981 real changes made)
+{res}{txt}{it:m}=50:
+(1983 real changes made)
+{res}{txt}
+{com}. mi passive: replace nearHF = 1 if facility_km >= 2.5
+{res}{txt}{it:m}=0:
+(470 real changes made)
+{res}{txt}{it:m}=1:
+(411 real changes made)
+{res}{txt}{it:m}=2:
+(411 real changes made)
+{res}{txt}{it:m}=3:
+(407 real changes made)
+{res}{txt}{it:m}=4:
+(408 real changes made)
+{res}{txt}{it:m}=5:
+(410 real changes made)
+{res}{txt}{it:m}=6:
+(406 real changes made)
+{res}{txt}{it:m}=7:
+(413 real changes made)
+{res}{txt}{it:m}=8:
+(406 real changes made)
+{res}{txt}{it:m}=9:
+(405 real changes made)
+{res}{txt}{it:m}=10:
+(405 real changes made)
+{res}{txt}{it:m}=11:
+(411 real changes made)
+{res}{txt}{it:m}=12:
+(413 real changes made)
+{res}{txt}{it:m}=13:
+(405 real changes made)
+{res}{txt}{it:m}=14:
+(405 real changes made)
+{res}{txt}{it:m}=15:
+(406 real changes made)
+{res}{txt}{it:m}=16:
+(405 real changes made)
+{res}{txt}{it:m}=17:
+(411 real changes made)
+{res}{txt}{it:m}=18:
+(407 real changes made)
+{res}{txt}{it:m}=19:
+(410 real changes made)
+{res}{txt}{it:m}=20:
+(411 real changes made)
+{res}{txt}{it:m}=21:
+(405 real changes made)
+{res}{txt}{it:m}=22:
+(406 real changes made)
+{res}{txt}{it:m}=23:
+(403 real changes made)
+{res}{txt}{it:m}=24:
+(419 real changes made)
+{res}{txt}{it:m}=25:
+(404 real changes made)
+{res}{txt}{it:m}=26:
+(418 real changes made)
+{res}{txt}{it:m}=27:
+(413 real changes made)
+{res}{txt}{it:m}=28:
+(405 real changes made)
+{res}{txt}{it:m}=29:
+(407 real changes made)
+{res}{txt}{it:m}=30:
+(408 real changes made)
+{res}{txt}{it:m}=31:
+(412 real changes made)
+{res}{txt}{it:m}=32:
+(412 real changes made)
+{res}{txt}{it:m}=33:
+(410 real changes made)
+{res}{txt}{it:m}=34:
+(402 real changes made)
+{res}{txt}{it:m}=35:
+(421 real changes made)
+{res}{txt}{it:m}=36:
+(409 real changes made)
+{res}{txt}{it:m}=37:
+(418 real changes made)
+{res}{txt}{it:m}=38:
+(417 real changes made)
+{res}{txt}{it:m}=39:
+(411 real changes made)
+{res}{txt}{it:m}=40:
+(410 real changes made)
+{res}{txt}{it:m}=41:
+(414 real changes made)
+{res}{txt}{it:m}=42:
+(408 real changes made)
+{res}{txt}{it:m}=43:
+(409 real changes made)
+{res}{txt}{it:m}=44:
+(419 real changes made)
+{res}{txt}{it:m}=45:
+(403 real changes made)
+{res}{txt}{it:m}=46:
+(405 real changes made)
+{res}{txt}{it:m}=47:
+(403 real changes made)
+{res}{txt}{it:m}=48:
+(408 real changes made)
+{res}{txt}{it:m}=49:
+(407 real changes made)
+{res}{txt}{it:m}=50:
+(405 real changes made)
+{res}{txt}
+{com}. 
+. drop nchildren
+{txt}
+{com}. mi passive: g nchildren = .
+{res}{txt}{it:m}=0:
+(2388 missing values generated)
+{res}{txt}{it:m}=1:
+(2388 missing values generated)
+{res}{txt}{it:m}=2:
+(2388 missing values generated)
+{res}{txt}{it:m}=3:
+(2388 missing values generated)
+{res}{txt}{it:m}=4:
+(2388 missing values generated)
+{res}{txt}{it:m}=5:
+(2388 missing values generated)
+{res}{txt}{it:m}=6:
+(2388 missing values generated)
+{res}{txt}{it:m}=7:
+(2388 missing values generated)
+{res}{txt}{it:m}=8:
+(2388 missing values generated)
+{res}{txt}{it:m}=9:
+(2388 missing values generated)
+{res}{txt}{it:m}=10:
+(2388 missing values generated)
+{res}{txt}{it:m}=11:
+(2388 missing values generated)
+{res}{txt}{it:m}=12:
+(2388 missing values generated)
+{res}{txt}{it:m}=13:
+(2388 missing values generated)
+{res}{txt}{it:m}=14:
+(2388 missing values generated)
+{res}{txt}{it:m}=15:
+(2388 missing values generated)
+{res}{txt}{it:m}=16:
+(2388 missing values generated)
+{res}{txt}{it:m}=17:
+(2388 missing values generated)
+{res}{txt}{it:m}=18:
+(2388 missing values generated)
+{res}{txt}{it:m}=19:
+(2388 missing values generated)
+{res}{txt}{it:m}=20:
+(2388 missing values generated)
+{res}{txt}{it:m}=21:
+(2388 missing values generated)
+{res}{txt}{it:m}=22:
+(2388 missing values generated)
+{res}{txt}{it:m}=23:
+(2388 missing values generated)
+{res}{txt}{it:m}=24:
+(2388 missing values generated)
+{res}{txt}{it:m}=25:
+(2388 missing values generated)
+{res}{txt}{it:m}=26:
+(2388 missing values generated)
+{res}{txt}{it:m}=27:
+(2388 missing values generated)
+{res}{txt}{it:m}=28:
+(2388 missing values generated)
+{res}{txt}{it:m}=29:
+(2388 missing values generated)
+{res}{txt}{it:m}=30:
+(2388 missing values generated)
+{res}{txt}{it:m}=31:
+(2388 missing values generated)
+{res}{txt}{it:m}=32:
+(2388 missing values generated)
+{res}{txt}{it:m}=33:
+(2388 missing values generated)
+{res}{txt}{it:m}=34:
+(2388 missing values generated)
+{res}{txt}{it:m}=35:
+(2388 missing values generated)
+{res}{txt}{it:m}=36:
+(2388 missing values generated)
+{res}{txt}{it:m}=37:
+(2388 missing values generated)
+{res}{txt}{it:m}=38:
+(2388 missing values generated)
+{res}{txt}{it:m}=39:
+(2388 missing values generated)
+{res}{txt}{it:m}=40:
+(2388 missing values generated)
+{res}{txt}{it:m}=41:
+(2388 missing values generated)
+{res}{txt}{it:m}=42:
+(2388 missing values generated)
+{res}{txt}{it:m}=43:
+(2388 missing values generated)
+{res}{txt}{it:m}=44:
+(2388 missing values generated)
+{res}{txt}{it:m}=45:
+(2388 missing values generated)
+{res}{txt}{it:m}=46:
+(2388 missing values generated)
+{res}{txt}{it:m}=47:
+(2388 missing values generated)
+{res}{txt}{it:m}=48:
+(2388 missing values generated)
+{res}{txt}{it:m}=49:
+(2388 missing values generated)
+{res}{txt}{it:m}=50:
+(2388 missing values generated)
+{res}{txt}
+{com}. mi passive: replace nchildren = 0 if childnum == 0
+{res}{txt}{it:m}=0:
+(1150 real changes made)
+{res}{txt}{it:m}=1:
+(1211 real changes made)
+{res}{txt}{it:m}=2:
+(1210 real changes made)
+{res}{txt}{it:m}=3:
+(1208 real changes made)
+{res}{txt}{it:m}=4:
+(1217 real changes made)
+{res}{txt}{it:m}=5:
+(1211 real changes made)
+{res}{txt}{it:m}=6:
+(1217 real changes made)
+{res}{txt}{it:m}=7:
+(1212 real changes made)
+{res}{txt}{it:m}=8:
+(1213 real changes made)
+{res}{txt}{it:m}=9:
+(1208 real changes made)
+{res}{txt}{it:m}=10:
+(1207 real changes made)
+{res}{txt}{it:m}=11:
+(1208 real changes made)
+{res}{txt}{it:m}=12:
+(1209 real changes made)
+{res}{txt}{it:m}=13:
+(1216 real changes made)
+{res}{txt}{it:m}=14:
+(1210 real changes made)
+{res}{txt}{it:m}=15:
+(1210 real changes made)
+{res}{txt}{it:m}=16:
+(1213 real changes made)
+{res}{txt}{it:m}=17:
+(1216 real changes made)
+{res}{txt}{it:m}=18:
+(1212 real changes made)
+{res}{txt}{it:m}=19:
+(1213 real changes made)
+{res}{txt}{it:m}=20:
+(1204 real changes made)
+{res}{txt}{it:m}=21:
+(1214 real changes made)
+{res}{txt}{it:m}=22:
+(1210 real changes made)
+{res}{txt}{it:m}=23:
+(1211 real changes made)
+{res}{txt}{it:m}=24:
+(1215 real changes made)
+{res}{txt}{it:m}=25:
+(1210 real changes made)
+{res}{txt}{it:m}=26:
+(1211 real changes made)
+{res}{txt}{it:m}=27:
+(1205 real changes made)
+{res}{txt}{it:m}=28:
+(1210 real changes made)
+{res}{txt}{it:m}=29:
+(1208 real changes made)
+{res}{txt}{it:m}=30:
+(1214 real changes made)
+{res}{txt}{it:m}=31:
+(1207 real changes made)
+{res}{txt}{it:m}=32:
+(1202 real changes made)
+{res}{txt}{it:m}=33:
+(1213 real changes made)
+{res}{txt}{it:m}=34:
+(1209 real changes made)
+{res}{txt}{it:m}=35:
+(1210 real changes made)
+{res}{txt}{it:m}=36:
+(1209 real changes made)
+{res}{txt}{it:m}=37:
+(1204 real changes made)
+{res}{txt}{it:m}=38:
+(1209 real changes made)
+{res}{txt}{it:m}=39:
+(1207 real changes made)
+{res}{txt}{it:m}=40:
+(1212 real changes made)
+{res}{txt}{it:m}=41:
+(1210 real changes made)
+{res}{txt}{it:m}=42:
+(1206 real changes made)
+{res}{txt}{it:m}=43:
+(1212 real changes made)
+{res}{txt}{it:m}=44:
+(1217 real changes made)
+{res}{txt}{it:m}=45:
+(1215 real changes made)
+{res}{txt}{it:m}=46:
+(1210 real changes made)
+{res}{txt}{it:m}=47:
+(1210 real changes made)
+{res}{txt}{it:m}=48:
+(1215 real changes made)
+{res}{txt}{it:m}=49:
+(1212 real changes made)
+{res}{txt}{it:m}=50:
+(1212 real changes made)
+{res}{txt}
+{com}. mi passive: replace nchildren = 1 if childnum >= 1
+{res}{txt}{it:m}=0:
+(1238 real changes made)
+{res}{txt}{it:m}=1:
+(1177 real changes made)
+{res}{txt}{it:m}=2:
+(1178 real changes made)
+{res}{txt}{it:m}=3:
+(1180 real changes made)
+{res}{txt}{it:m}=4:
+(1171 real changes made)
+{res}{txt}{it:m}=5:
+(1177 real changes made)
+{res}{txt}{it:m}=6:
+(1171 real changes made)
+{res}{txt}{it:m}=7:
+(1176 real changes made)
+{res}{txt}{it:m}=8:
+(1175 real changes made)
+{res}{txt}{it:m}=9:
+(1180 real changes made)
+{res}{txt}{it:m}=10:
+(1181 real changes made)
+{res}{txt}{it:m}=11:
+(1180 real changes made)
+{res}{txt}{it:m}=12:
+(1179 real changes made)
+{res}{txt}{it:m}=13:
+(1172 real changes made)
+{res}{txt}{it:m}=14:
+(1178 real changes made)
+{res}{txt}{it:m}=15:
+(1178 real changes made)
+{res}{txt}{it:m}=16:
+(1175 real changes made)
+{res}{txt}{it:m}=17:
+(1172 real changes made)
+{res}{txt}{it:m}=18:
+(1176 real changes made)
+{res}{txt}{it:m}=19:
+(1175 real changes made)
+{res}{txt}{it:m}=20:
+(1184 real changes made)
+{res}{txt}{it:m}=21:
+(1174 real changes made)
+{res}{txt}{it:m}=22:
+(1178 real changes made)
+{res}{txt}{it:m}=23:
+(1177 real changes made)
+{res}{txt}{it:m}=24:
+(1173 real changes made)
+{res}{txt}{it:m}=25:
+(1178 real changes made)
+{res}{txt}{it:m}=26:
+(1177 real changes made)
+{res}{txt}{it:m}=27:
+(1183 real changes made)
+{res}{txt}{it:m}=28:
+(1178 real changes made)
+{res}{txt}{it:m}=29:
+(1180 real changes made)
+{res}{txt}{it:m}=30:
+(1174 real changes made)
+{res}{txt}{it:m}=31:
+(1181 real changes made)
+{res}{txt}{it:m}=32:
+(1186 real changes made)
+{res}{txt}{it:m}=33:
+(1175 real changes made)
+{res}{txt}{it:m}=34:
+(1179 real changes made)
+{res}{txt}{it:m}=35:
+(1178 real changes made)
+{res}{txt}{it:m}=36:
+(1179 real changes made)
+{res}{txt}{it:m}=37:
+(1184 real changes made)
+{res}{txt}{it:m}=38:
+(1179 real changes made)
+{res}{txt}{it:m}=39:
+(1181 real changes made)
+{res}{txt}{it:m}=40:
+(1176 real changes made)
+{res}{txt}{it:m}=41:
+(1178 real changes made)
+{res}{txt}{it:m}=42:
+(1182 real changes made)
+{res}{txt}{it:m}=43:
+(1176 real changes made)
+{res}{txt}{it:m}=44:
+(1171 real changes made)
+{res}{txt}{it:m}=45:
+(1173 real changes made)
+{res}{txt}{it:m}=46:
+(1178 real changes made)
+{res}{txt}{it:m}=47:
+(1178 real changes made)
+{res}{txt}{it:m}=48:
+(1173 real changes made)
+{res}{txt}{it:m}=49:
+(1176 real changes made)
+{res}{txt}{it:m}=50:
+(1176 real changes made)
+{res}{txt}
+{com}. 
+. label values nearHF dist
+{txt}
+{com}. label values nchildren children
+{txt}
+{com}. 
+. label variable nearHF        "Distance to nearest health facility"
+{txt}
+{com}. label variable nchildren     "Number of children (cat)"
+{txt}
+{com}. 
+. mi passive: g npartners = sexpartnernum/5
+{res}{txt}{it:m}=0:
+(62 missing values generated)
+{res}{txt}{it:m}=1:
+{res}{txt}{it:m}=2:
+{res}{txt}{it:m}=3:
+{res}{txt}{it:m}=4:
+{res}{txt}{it:m}=5:
+{res}{txt}{it:m}=6:
+{res}{txt}{it:m}=7:
+{res}{txt}{it:m}=8:
+{res}{txt}{it:m}=9:
+{res}{txt}{it:m}=10:
+{res}{txt}{it:m}=11:
+{res}{txt}{it:m}=12:
+{res}{txt}{it:m}=13:
+{res}{txt}{it:m}=14:
+{res}{txt}{it:m}=15:
+{res}{txt}{it:m}=16:
+{res}{txt}{it:m}=17:
+{res}{txt}{it:m}=18:
+{res}{txt}{it:m}=19:
+{res}{txt}{it:m}=20:
+{res}{txt}{it:m}=21:
+{res}{txt}{it:m}=22:
+{res}{txt}{it:m}=23:
+{res}{txt}{it:m}=24:
+{res}{txt}{it:m}=25:
+{res}{txt}{it:m}=26:
+{res}{txt}{it:m}=27:
+{res}{txt}{it:m}=28:
+{res}{txt}{it:m}=29:
+{res}{txt}{it:m}=30:
+{res}{txt}{it:m}=31:
+{res}{txt}{it:m}=32:
+{res}{txt}{it:m}=33:
+{res}{txt}{it:m}=34:
+{res}{txt}{it:m}=35:
+{res}{txt}{it:m}=36:
+{res}{txt}{it:m}=37:
+{res}{txt}{it:m}=38:
+{res}{txt}{it:m}=39:
+{res}{txt}{it:m}=40:
+{res}{txt}{it:m}=41:
+{res}{txt}{it:m}=42:
+{res}{txt}{it:m}=43:
+{res}{txt}{it:m}=44:
+{res}{txt}{it:m}=45:
+{res}{txt}{it:m}=46:
+{res}{txt}{it:m}=47:
+{res}{txt}{it:m}=48:
+{res}{txt}{it:m}=49:
+{res}{txt}{it:m}=50:
+{res}{txt}
+{com}. mi passive: g nintercourse = sexpartner1mo/5
+{res}{txt}{it:m}=0:
+(335 missing values generated)
+{res}{txt}{it:m}=1:
+{res}{txt}{it:m}=2:
+{res}{txt}{it:m}=3:
+{res}{txt}{it:m}=4:
+{res}{txt}{it:m}=5:
+{res}{txt}{it:m}=6:
+{res}{txt}{it:m}=7:
+{res}{txt}{it:m}=8:
+{res}{txt}{it:m}=9:
+{res}{txt}{it:m}=10:
+{res}{txt}{it:m}=11:
+{res}{txt}{it:m}=12:
+{res}{txt}{it:m}=13:
+{res}{txt}{it:m}=14:
+{res}{txt}{it:m}=15:
+{res}{txt}{it:m}=16:
+{res}{txt}{it:m}=17:
+{res}{txt}{it:m}=18:
+{res}{txt}{it:m}=19:
+{res}{txt}{it:m}=20:
+{res}{txt}{it:m}=21:
+{res}{txt}{it:m}=22:
+{res}{txt}{it:m}=23:
+{res}{txt}{it:m}=24:
+{res}{txt}{it:m}=25:
+{res}{txt}{it:m}=26:
+{res}{txt}{it:m}=27:
+{res}{txt}{it:m}=28:
+{res}{txt}{it:m}=29:
+{res}{txt}{it:m}=30:
+{res}{txt}{it:m}=31:
+{res}{txt}{it:m}=32:
+{res}{txt}{it:m}=33:
+{res}{txt}{it:m}=34:
+{res}{txt}{it:m}=35:
+{res}{txt}{it:m}=36:
+{res}{txt}{it:m}=37:
+{res}{txt}{it:m}=38:
+{res}{txt}{it:m}=39:
+{res}{txt}{it:m}=40:
+{res}{txt}{it:m}=41:
+{res}{txt}{it:m}=42:
+{res}{txt}{it:m}=43:
+{res}{txt}{it:m}=44:
+{res}{txt}{it:m}=45:
+{res}{txt}{it:m}=46:
+{res}{txt}{it:m}=47:
+{res}{txt}{it:m}=48:
+{res}{txt}{it:m}=49:
+{res}{txt}{it:m}=50:
+{res}{txt}
+{com}. 
+. label variable npartners     "Number of lifetime sex partners (units of 5)"
+{txt}
+{com}. label variable nintercourse  "Number of times engaged in sex in last 30 days (units of 5)"
+{txt}
+{com}. 
+. #delimit ;
+{txt}delimiter now ;
+{com}. keep gender
+>      age
+>          edustatus
+>          educ
+>          employmt
+>          married
+>          sexage
+>          sexpartnernum
+>          sexpartner1mo
+>          npartners
+>          nintercourse
+>          nchildren
+>          sti
+>          contother
+>          ncontknow
+>          contspkpartnerrecent
+>          contagree
+>          condop_m
+>          condop_index
+>          cond6mo
+>          condlast
+>          ward
+>          nearHF
+>          facility_km
+>          poverty
+>          qnum
+>          _*;
+{txt}
+{com}. #delimit cr
+{txt}delimiter now cr
+{com}. 
+. save "${c -(}data{c )-}/maximum_diva_03_imputed.dta", replace
+{txt}file C:/Users/cboyer.IPA/Desktop/GitHub/PSI-Womens-Condom/data/maximum_diva_03_imputed.dta saved
+
+{com}. 
+{txt}end of do-file
+
+{com}. do 4_model.dof  
+{err}{p 0 4 2}
+file 4_model.dof
+not found
+{p_end}
+{txt}{search r(601):r(601);}
+
+end of do-file
+
+{search r(601):r(601);}
+
+{com}. do "C:\Users\cboyer.IPA\AppData\Local\Temp\STD05000000.tmp"
+{txt}
+{com}. do 4_model.do
+{txt}
+{com}. /*========================================
+>   file:    4_model.do                    
+>   author:  christopher boyer             
+>            innovations for poverty action  
+>   date:    2016-12-18                      
+>   ========================================*/
+.  
+.  /* this file creates table 3, adjusted models 
+>     of risk factors for unprotected sex at
+>         last intercourse.
+>  */
+.  
+. use "${c -(}data{c )-}/maximum_diva_03_imputed.dta", clear
+{txt}
+{com}. 
+. * order the variables
+. #delimit ;
+{txt}delimiter now ;
+{com}. order gender
+>       age
+>           edustatus
+>           educ
+>           employmt
+>           married
+>           poverty
+>           sexage
+>           sexpartnernum
+>           sexpartner1mo
+>           nchildren
+>           sti
+>           contother
+>           nearHF
+>           ncontknow
+>           contspkpartnerrecent
+>           contagree
+>           condop_index
+>           cond6mo
+>           ward
+>           qnum;
+{txt}
+{com}. #delimit cr
+{txt}delimiter now cr
+{com}. 
+. cap which estout
+{txt}
+{com}. if _rc ssc install estout
+{txt}
+{com}. 
+. /* user defined program - combines crude models in the same column 
+>    for easy display */
+. cap program drop appendmodels
+{txt}
+{com}. program appendmodels, eclass
+{txt}  1{com}. version 13
+{txt}  2{com}.    syntax namelist
+{txt}  3{com}.    tempname b V tmp
+{txt}  4{com}.    foreach name of local namelist {c -(}
+{txt}  5{com}.        qui est restore `name'
+{txt}  6{com}.        mat `tmp' = e(b)
+{txt}  7{com}.        local eq1: coleq `tmp'
+{txt}  8{com}.        gettoken eq1 : eq1
+{txt}  9{com}.        mat `tmp' = `tmp'[1,"`eq1':"]
+{txt} 10{com}.        local cons = colnumb(`tmp',"_cons")
+{txt} 11{com}.        if `cons'<. & `cons'>1 {c -(}
+{txt} 12{com}.            mat `tmp' = `tmp'[1,1..`cons'-1]
+{txt} 13{com}.        {c )-}
+{txt} 14{com}.        mat `b' = nullmat(`b') , `tmp'
+{txt} 15{com}.        mat `tmp' = e(V)
+{txt} 16{com}.        mat `tmp' = `tmp'["`eq1':","`eq1':"]
+{txt} 17{com}.        if `cons'<. & `cons'>1 {c -(}
+{txt} 18{com}.            mat `tmp' = `tmp'[1..`cons'-1,1..`cons'-1]
+{txt} 19{com}.        {c )-}
+{txt} 20{com}.        capt confirm matrix `V'
+{txt} 21{com}.        if _rc {c -(}
+{txt} 22{com}.            mat `V' = `tmp'
+{txt} 23{com}.        {c )-}
+{txt} 24{com}.        else {c -(}
+{txt} 25{com}.            mat `V' = ///
+>         ( `V' , J(rowsof(`V'),colsof(`tmp'),0) ) \ ///
+>         ( J(rowsof(`tmp'),colsof(`V'),0) , `tmp' )
+{txt} 26{com}.        {c )-}
+{txt} 27{com}.    {c )-}
+{txt} 28{com}.    local names: colfullnames `b'
+{txt} 29{com}.    mat coln `V' = `names'
+{txt} 30{com}.    mat rown `V' = `names'
+{txt} 31{com}.    eret post `b' `V'
+{txt} 32{com}.    eret local cmd "whatever"
+{txt} 33{com}. end
+{txt}
+{com}. 
+. eststo clear
+{txt}
+{com}. 
+. 
+. * generate reverse outcome variable
+. g nocondlast = (condlast!=1)
+{txt}
+{com}. 
+. * construct variable list
+. ds _*, not
+{txt}{col 1}gender{col 15}poverty{col 29}contother{col 43}cond6mo{col 57}npartners
+{col 1}age{col 15}sexage{col 29}nearHF{col 43}ward{col 57}nintercourse
+{col 1}edustatus{col 15}sexpartner~m{col 29}ncontknow{col 43}qnum{col 57}nocondlast
+{col 1}educ{col 15}sexpartner~o{col 29}contspkpar~t{col 43}condop_m
+{col 1}employmt{col 15}nchildren{col 29}contagree{col 43}condlast
+{col 1}married{col 15}sti{col 29}condop_index{col 43}facility_km
+
+{com}. local all        "`r(varlist)'"
+{txt}
+{com}. local exclude    `""qnum" "age" "ward" "cond6mo" "condlast" "nocondlast" "facility_km" "condop_m" "childnum" "sexpartnernum" "sexpartner1mo"'
+{txt}
+{com}. local contvars   `""facility_km" "percpoor" "sexage" "npartners" "nintercourse" "childnum" "condop_index""'
+{txt}
+{com}. local demovars   "i.gender i.edustatus i.educ i.employmt i.married i.poverty"
+{txt}
+{com}. local sexvars    "c.npartners##c.nintercourse i.nchildren i.sti i.contother"
+{txt}
+{com}. local othervars  "i.ncontknow i.contspkpartnerrecent i.contagree condop_index"
+{txt}
+{com}. local accessvars "i.nearHF"
+{txt}
+{com}. local loopvars : list all - exclude
+{txt}
+{com}. 
+. /* loop through crude variables and estimate relative risk model; 
+>    if factor variable add i. prefix to estimate across levels */
+.         
+. local i = 1     
+{txt}
+{com}. local mlist ""
+{txt}
+{com}. qui {c -(}
+crude model of gender
+crude model of edustatus
+crude model of educ
+crude model of employmt
+crude model of married
+crude model of poverty
+crude model of sexage
+crude model of nchildren
+crude model of sti
+crude model of contother
+crude model of nearHF
+crude model of ncontknow
+crude model of contspkpartnerrecent
+crude model of contagree
+crude model of condop_index
+crude model of npartners
+crude model of nintercourse
+{txt}
+{com}. 
+. * combined crude models
+. eststo crude : appendmodels `mlist'
+{txt}
+{com}. 
+. * adjusted models
+. mi estimate, post: ///
+>     glm nocondlast `demovars', fam(poisson) link(log) vce(robust)
+{res}
+{txt}Multiple-imputation estimates{col 51}Imputations{col 67}= {res}        50
+{txt}Generalized linear models{col 51}Number of obs{col 67}= {res}      2388
+{txt}{col 51}Average RVI{col 67}= {res}    0.0004
+{txt}{col 51}Largest FMI{col 67}= {res}    0.0033
+{txt}DF adjustment:{ralign 15: {res:Large sample}}{col 51}DF:     min{col 67}= {res}4532393.80
+{txt}{col 51}        avg{col 67}= {res}  4.03e+17
+{txt}{col 51}        max{col 67}= {res}  3.63e+18
+{txt}Model F test:{ralign 16: {res:Equal FMI}}{col 51}F({res}   8{txt},{res} 2.2e+09{txt}){col 67}= {res}     57.76
+{txt}Within VCE type: {ralign 12:{res:Robust}}{col 51}Prob > F{col 67}= {res}    0.0000
+
+{txt}{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 1}  nocondlast{col 14}{c |}      Coef.{col 26}   Std. Err.{col 38}      t{col 46}   P>|t|{col 54}     [95% Con{col 67}f. Interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{space 4}1.gender {c |}{col 14}{res}{space 2} .2863939{col 26}{space 2} .0529637{col 37}{space 1}    5.41{col 46}{space 3}0.000{col 54}{space 4}  .182587{col 67}{space 3} .3902009
+{txt}{space 12} {c |}
+{space 3}edustatus {c |}
+{space 8}Yes  {c |}{col 14}{res}{space 2} .0741435{col 26}{space 2}  .050083{col 37}{space 1}    1.48{col 46}{space 3}0.139{col 54}{space 4}-.0240175{col 67}{space 3} .1723044
+{txt}{space 12} {c |}
+{space 8}educ {c |}
+{space 2}Secondary  {c |}{col 14}{res}{space 2}-.0090536{col 26}{space 2}  .032579{col 37}{space 1}   -0.28{col 46}{space 3}0.781{col 54}{space 4}-.0729073{col 67}{space 3} .0548001
+{txt}{space 5}Higher  {c |}{col 14}{res}{space 2}-.2373102{col 26}{space 2} .0799067{col 37}{space 1}   -2.97{col 46}{space 3}0.003{col 54}{space 4}-.3939244{col 67}{space 3} -.080696
+{txt}{space 12} {c |}
+{space 4}employmt {c |}
+{space 8}Yes  {c |}{col 14}{res}{space 2}-.1150094{col 26}{space 2} .0457682{col 37}{space 1}   -2.51{col 46}{space 3}0.012{col 54}{space 4}-.2047134{col 67}{space 3}-.0253054
+{txt}{space 12} {c |}
+{space 5}married {c |}
+{space 4}Married  {c |}{col 14}{res}{space 2} .4626901{col 26}{space 2} .0370015{col 37}{space 1}   12.50{col 46}{space 3}0.000{col 54}{space 4} .3901684{col 67}{space 3} .5352117
+{txt}{space 12} {c |}
+{space 5}poverty {c |}
+{space 2}10% - 20%  {c |}{col 14}{res}{space 2} .2122101{col 26}{space 2} .0645819{col 37}{space 1}    3.29{col 46}{space 3}0.001{col 54}{space 4} .0856319{col 67}{space 3} .3387883
+{txt}{space 3}{&ge}20%  {c |}{col 14}{res}{space 2} .2970518{col 26}{space 2} .0627385{col 37}{space 1}    4.73{col 46}{space 3}0.000{col 54}{space 4} .1740866{col 67}{space 3} .4200171
+{txt}{space 12} {c |}
+{space 7}_cons {c |}{col 14}{res}{space 2}-1.120598{col 26}{space 2} .0789256{col 37}{space 1}  -14.20{col 46}{space 3}0.000{col 54}{space 4}-1.275289{col 67}{space 3} -.965907
+{txt}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}{txt}
+{com}. eststo adj1
+{txt}
+{com}. mi estimate, post: ///
+>     glm nocondlast `demovars' `sexvars', fam(poisson) link(log) vce(robust)
+{res}
+{txt}Multiple-imputation estimates{col 51}Imputations{col 67}= {res}        50
+{txt}Generalized linear models{col 51}Number of obs{col 67}= {res}      2388
+{txt}{col 51}Average RVI{col 67}= {res}    0.0712
+{txt}{col 51}Largest FMI{col 67}= {res}    0.4296
+{txt}DF adjustment:{ralign 15: {res:Large sample}}{col 51}DF:     min{col 67}= {res}    270.75
+{txt}{col 51}        avg{col 67}= {res}  2.63e+07
+{txt}{col 51}        max{col 67}= {res}  1.99e+08
+{txt}Model F test:{ralign 16: {res:Equal FMI}}{col 51}F({res}  15{txt},{res}146519.7{txt}){col 67}= {res}     29.43
+{txt}Within VCE type: {ralign 12:{res:Robust}}{col 51}Prob > F{col 67}= {res}    0.0000
+
+{txt}{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 1}  nocondlast{col 14}{c |}      Coef.{col 26}   Std. Err.{col 38}      t{col 46}   P>|t|{col 54}     [95% Con{col 67}f. Interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{space 4}1.gender {c |}{col 14}{res}{space 2} .2231704{col 26}{space 2} .0566009{col 37}{space 1}    3.94{col 46}{space 3}0.000{col 54}{space 4} .1122342{col 67}{space 3} .3341066
+{txt}{space 12} {c |}
+{space 3}edustatus {c |}
+{space 8}Yes  {c |}{col 14}{res}{space 2} .0699487{col 26}{space 2} .0501538{col 37}{space 1}    1.39{col 46}{space 3}0.163{col 54}{space 4}-.0283509{col 67}{space 3} .1682483
+{txt}{space 12} {c |}
+{space 8}educ {c |}
+{space 2}Secondary  {c |}{col 14}{res}{space 2}-.0039109{col 26}{space 2} .0326548{col 37}{space 1}   -0.12{col 46}{space 3}0.905{col 54}{space 4}-.0679131{col 67}{space 3} .0600914
+{txt}{space 5}Higher  {c |}{col 14}{res}{space 2}-.2118237{col 26}{space 2} .0803481{col 37}{space 1}   -2.64{col 46}{space 3}0.008{col 54}{space 4}-.3693032{col 67}{space 3}-.0543443
+{txt}{space 12} {c |}
+{space 4}employmt {c |}
+{space 8}Yes  {c |}{col 14}{res}{space 2}-.1117639{col 26}{space 2} .0459288{col 37}{space 1}   -2.43{col 46}{space 3}0.015{col 54}{space 4}-.2017827{col 67}{space 3} -.021745
+{txt}{space 12} {c |}
+{space 5}married {c |}
+{space 4}Married  {c |}{col 14}{res}{space 2} .4437886{col 26}{space 2} .0440739{col 37}{space 1}   10.07{col 46}{space 3}0.000{col 54}{space 4} .3574043{col 67}{space 3} .5301729
+{txt}{space 12} {c |}
+{space 5}poverty {c |}
+{space 2}10% - 20%  {c |}{col 14}{res}{space 2} .2050135{col 26}{space 2} .0646848{col 37}{space 1}    3.17{col 46}{space 3}0.002{col 54}{space 4} .0782336{col 67}{space 3} .3317935
+{txt}{space 3}{&ge}20%  {c |}{col 14}{res}{space 2} .2881274{col 26}{space 2} .0629966{col 37}{space 1}    4.57{col 46}{space 3}0.000{col 54}{space 4} .1646562{col 67}{space 3} .4115985
+{txt}{space 12} {c |}
+{space 3}npartners {c |}{col 14}{res}{space 2}-.0921457{col 26}{space 2} .0431382{col 37}{space 1}   -2.14{col 46}{space 3}0.033{col 54}{space 4}-.1767963{col 67}{space 3} -.007495
+{txt}nintercourse {c |}{col 14}{res}{space 2}-.0263503{col 26}{space 2} .0150805{col 37}{space 1}   -1.75{col 46}{space 3}0.081{col 54}{space 4}-.0559374{col 67}{space 3} .0032367
+{txt}{space 12} {c |}
+{space 1}c.npartners#{c |}
+{space 10}c. {c |}
+nintercourse {c |}{col 14}{res}{space 2} .0330365{col 26}{space 2} .0169151{col 37}{space 1}    1.95{col 46}{space 3}0.052{col 54}{space 4}-.0002654{col 67}{space 3} .0663384
+{txt}{space 12} {c |}
+{space 3}nchildren {c |}
+{space 2}1 or more  {c |}{col 14}{res}{space 2} .1245719{col 26}{space 2} .0507118{col 37}{space 1}    2.46{col 46}{space 3}0.014{col 54}{space 4} .0251762{col 67}{space 3} .2239675
+{txt}{space 12} {c |}
+{space 9}sti {c |}
+{space 8}Yes  {c |}{col 14}{res}{space 2}-.1163593{col 26}{space 2} .0457622{col 37}{space 1}   -2.54{col 46}{space 3}0.011{col 54}{space 4}-.2060515{col 67}{space 3}-.0266671
+{txt}{space 12} {c |}
+{space 3}contother {c |}
+Modern Me..  {c |}{col 14}{res}{space 2}-.0450128{col 26}{space 2}  .043939{col 37}{space 1}   -1.02{col 46}{space 3}0.306{col 54}{space 4}-.1311317{col 67}{space 3}  .041106
+{txt}LARC/LAPM..  {c |}{col 14}{res}{space 2} .0067541{col 26}{space 2} .0536337{col 37}{space 1}    0.13{col 46}{space 3}0.900{col 54}{space 4}-.0983663{col 67}{space 3} .1118744
+{txt}{space 12} {c |}
+{space 7}_cons {c |}{col 14}{res}{space 2} -.960789{col 26}{space 2} .0908911{col 37}{space 1}  -10.57{col 46}{space 3}0.000{col 54}{space 4}-1.138936{col 67}{space 3}-.7826424
+{txt}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}{txt}
+{com}. eststo adj2
+{txt}
+{com}. mi estimate, post: ///
+>     glm nocondlast `demovars' `sexvars' `accessvars', fam(poisson) link(log) vce(robust)
+{res}
+{txt}Multiple-imputation estimates{col 51}Imputations{col 67}= {res}        50
+{txt}Generalized linear models{col 51}Number of obs{col 67}= {res}      2388
+{txt}{col 51}Average RVI{col 67}= {res}    0.0712
+{txt}{col 51}Largest FMI{col 67}= {res}    0.4300
+{txt}DF adjustment:{ralign 15: {res:Large sample}}{col 51}DF:     min{col 67}= {res}    270.30
+{txt}{col 51}        avg{col 67}= {res}  1.71e+07
+{txt}{col 51}        max{col 67}= {res}  1.84e+08
+{txt}Model F test:{ralign 16: {res:Equal FMI}}{col 51}F({res}  16{txt},{res}157648.6{txt}){col 67}= {res}     27.80
+{txt}Within VCE type: {ralign 12:{res:Robust}}{col 51}Prob > F{col 67}= {res}    0.0000
+
+{txt}{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 1}  nocondlast{col 14}{c |}      Coef.{col 26}   Std. Err.{col 38}      t{col 46}   P>|t|{col 54}     [95% Con{col 67}f. Interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{space 4}1.gender {c |}{col 14}{res}{space 2}  .223463{col 26}{space 2} .0565293{col 37}{space 1}    3.95{col 46}{space 3}0.000{col 54}{space 4} .1126673{col 67}{space 3} .3342588
+{txt}{space 12} {c |}
+{space 3}edustatus {c |}
+{space 8}Yes  {c |}{col 14}{res}{space 2} .0701315{col 26}{space 2} .0501999{col 37}{space 1}    1.40{col 46}{space 3}0.162{col 54}{space 4}-.0282586{col 67}{space 3} .1685216
+{txt}{space 12} {c |}
+{space 8}educ {c |}
+{space 2}Secondary  {c |}{col 14}{res}{space 2}-.0018172{col 26}{space 2} .0326755{col 37}{space 1}   -0.06{col 46}{space 3}0.956{col 54}{space 4}  -.06586{col 67}{space 3} .0622256
+{txt}{space 5}Higher  {c |}{col 14}{res}{space 2}-.2070328{col 26}{space 2} .0804995{col 37}{space 1}   -2.57{col 46}{space 3}0.010{col 54}{space 4} -.364809{col 67}{space 3}-.0492566
+{txt}{space 12} {c |}
+{space 4}employmt {c |}
+{space 8}Yes  {c |}{col 14}{res}{space 2}-.1123287{col 26}{space 2} .0459615{col 37}{space 1}   -2.44{col 46}{space 3}0.015{col 54}{space 4}-.2024116{col 67}{space 3}-.0222459
+{txt}{space 12} {c |}
+{space 5}married {c |}
+{space 4}Married  {c |}{col 14}{res}{space 2} .4390879{col 26}{space 2} .0442624{col 37}{space 1}    9.92{col 46}{space 3}0.000{col 54}{space 4}  .352334{col 67}{space 3} .5258417
+{txt}{space 12} {c |}
+{space 5}poverty {c |}
+{space 2}10% - 20%  {c |}{col 14}{res}{space 2} .2047601{col 26}{space 2}  .064756{col 37}{space 1}    3.16{col 46}{space 3}0.002{col 54}{space 4} .0778407{col 67}{space 3} .3316796
+{txt}{space 3}{&ge}20%  {c |}{col 14}{res}{space 2} .2820234{col 26}{space 2} .0632667{col 37}{space 1}    4.46{col 46}{space 3}0.000{col 54}{space 4}  .158023{col 67}{space 3} .4060239
+{txt}{space 12} {c |}
+{space 3}npartners {c |}{col 14}{res}{space 2}-.0923573{col 26}{space 2} .0431214{col 37}{space 1}   -2.14{col 46}{space 3}0.032{col 54}{space 4}-.1769746{col 67}{space 3}  -.00774
+{txt}nintercourse {c |}{col 14}{res}{space 2}-.0259279{col 26}{space 2}  .015105{col 37}{space 1}   -1.72{col 46}{space 3}0.086{col 54}{space 4}-.0555629{col 67}{space 3} .0037071
+{txt}{space 12} {c |}
+{space 1}c.npartners#{c |}
+{space 10}c. {c |}
+nintercourse {c |}{col 14}{res}{space 2} .0331089{col 26}{space 2} .0169544{col 37}{space 1}    1.95{col 46}{space 3}0.052{col 54}{space 4}-.0002705{col 67}{space 3} .0664883
+{txt}{space 12} {c |}
+{space 3}nchildren {c |}
+{space 2}1 or more  {c |}{col 14}{res}{space 2} .1237964{col 26}{space 2} .0507159{col 37}{space 1}    2.44{col 46}{space 3}0.015{col 54}{space 4} .0243926{col 67}{space 3} .2232001
+{txt}{space 12} {c |}
+{space 9}sti {c |}
+{space 8}Yes  {c |}{col 14}{res}{space 2}-.1148095{col 26}{space 2} .0457427{col 37}{space 1}   -2.51{col 46}{space 3}0.012{col 54}{space 4}-.2044635{col 67}{space 3}-.0251554
+{txt}{space 12} {c |}
+{space 3}contother {c |}
+Modern Me..  {c |}{col 14}{res}{space 2}-.0449874{col 26}{space 2} .0438894{col 37}{space 1}   -1.03{col 46}{space 3}0.305{col 54}{space 4}-.1310091{col 67}{space 3} .0410342
+{txt}LARC/LAPM..  {c |}{col 14}{res}{space 2} .0072719{col 26}{space 2} .0535612{col 37}{space 1}    0.14{col 46}{space 3}0.892{col 54}{space 4}-.0977064{col 67}{space 3} .1122502
+{txt}{space 12} {c |}
+{space 6}nearHF {c |}
+{space 2}>= 2.5 km  {c |}{col 14}{res}{space 2} .0437164{col 26}{space 2} .0355605{col 37}{space 1}    1.23{col 46}{space 3}0.219{col 54}{space 4} -.025988{col 67}{space 3} .1134209
+{txt}{space 7}_cons {c |}{col 14}{res}{space 2}-.9670181{col 26}{space 2} .0911825{col 37}{space 1}  -10.61{col 46}{space 3}0.000{col 54}{space 4}-1.145736{col 67}{space 3}-.7883004
+{txt}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}{txt}
+{com}. eststo adj3
+{txt}
+{com}. mi estimate, post: ///
+>     glm nocondlast `demovars' `sexvars' `accessvars' `othervars', fam(poisson) link(log) vce(robust)
+{res}
+{txt}Multiple-imputation estimates{col 51}Imputations{col 67}= {res}        50
+{txt}Generalized linear models{col 51}Number of obs{col 67}= {res}      2388
+{txt}{col 51}Average RVI{col 67}= {res}    0.0567
+{txt}{col 51}Largest FMI{col 67}= {res}    0.4069
+{txt}DF adjustment:{ralign 15: {res:Large sample}}{col 51}DF:     min{col 67}= {res}    301.80
+{txt}{col 51}        avg{col 67}= {res}6006697.58
+{txt}{col 51}        max{col 67}= {res}  3.88e+07
+{txt}Model F test:{ralign 16: {res:Equal FMI}}{col 51}F({res}  20{txt},{res}310493.4{txt}){col 67}= {res}     26.20
+{txt}Within VCE type: {ralign 12:{res:Robust}}{col 51}Prob > F{col 67}= {res}    0.0000
+
+{txt}{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 1}  nocondlast{col 14}{c |}      Coef.{col 26}   Std. Err.{col 38}      t{col 46}   P>|t|{col 54}     [95% Con{col 67}f. Interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{space 4}1.gender {c |}{col 14}{res}{space 2}  .211209{col 26}{space 2} .0563104{col 37}{space 1}    3.75{col 46}{space 3}0.000{col 54}{space 4} .1008422{col 67}{space 3} .3215758
+{txt}{space 12} {c |}
+{space 3}edustatus {c |}
+{space 8}Yes  {c |}{col 14}{res}{space 2} .0669433{col 26}{space 2} .0498497{col 37}{space 1}    1.34{col 46}{space 3}0.179{col 54}{space 4}-.0307604{col 67}{space 3}  .164647
+{txt}{space 12} {c |}
+{space 8}educ {c |}
+{space 2}Secondary  {c |}{col 14}{res}{space 2} .0461161{col 26}{space 2} .0326565{col 37}{space 1}    1.41{col 46}{space 3}0.158{col 54}{space 4}-.0178895{col 67}{space 3} .1101217
+{txt}{space 5}Higher  {c |}{col 14}{res}{space 2}-.1143523{col 26}{space 2} .0809347{col 37}{space 1}   -1.41{col 46}{space 3}0.158{col 54}{space 4}-.2729815{col 67}{space 3} .0442768
+{txt}{space 12} {c |}
+{space 4}employmt {c |}
+{space 8}Yes  {c |}{col 14}{res}{space 2}-.0905835{col 26}{space 2} .0461014{col 37}{space 1}   -1.96{col 46}{space 3}0.049{col 54}{space 4}-.1809405{col 67}{space 3}-.0002264
+{txt}{space 12} {c |}
+{space 5}married {c |}
+{space 4}Married  {c |}{col 14}{res}{space 2} .4640492{col 26}{space 2} .0439374{col 37}{space 1}   10.56{col 46}{space 3}0.000{col 54}{space 4} .3779324{col 67}{space 3} .5501661
+{txt}{space 12} {c |}
+{space 5}poverty {c |}
+{space 2}10% - 20%  {c |}{col 14}{res}{space 2} .1997147{col 26}{space 2} .0636537{col 37}{space 1}    3.14{col 46}{space 3}0.002{col 54}{space 4} .0749557{col 67}{space 3} .3244736
+{txt}{space 3}{&ge}20%  {c |}{col 14}{res}{space 2} .2700739{col 26}{space 2} .0620975{col 37}{space 1}    4.35{col 46}{space 3}0.000{col 54}{space 4} .1483651{col 67}{space 3} .3917827
+{txt}{space 12} {c |}
+{space 3}npartners {c |}{col 14}{res}{space 2}-.1025612{col 26}{space 2} .0446463{col 37}{space 1}   -2.30{col 46}{space 3}0.022{col 54}{space 4}-.1901567{col 67}{space 3}-.0149658
+{txt}nintercourse {c |}{col 14}{res}{space 2}-.0321143{col 26}{space 2} .0154787{col 37}{space 1}   -2.07{col 46}{space 3}0.038{col 54}{space 4}-.0624734{col 67}{space 3}-.0017551
+{txt}{space 12} {c |}
+{space 1}c.npartners#{c |}
+{space 10}c. {c |}
+nintercourse {c |}{col 14}{res}{space 2} .0356598{col 26}{space 2} .0169946{col 37}{space 1}    2.10{col 46}{space 3}0.037{col 54}{space 4} .0022168{col 67}{space 3} .0691027
+{txt}{space 12} {c |}
+{space 3}nchildren {c |}
+{space 2}1 or more  {c |}{col 14}{res}{space 2} .1385865{col 26}{space 2} .0490089{col 37}{space 1}    2.83{col 46}{space 3}0.005{col 54}{space 4} .0425287{col 67}{space 3} .2346444
+{txt}{space 12} {c |}
+{space 9}sti {c |}
+{space 8}Yes  {c |}{col 14}{res}{space 2}-.0975311{col 26}{space 2} .0452637{col 37}{space 1}   -2.15{col 46}{space 3}0.031{col 54}{space 4}-.1862462{col 67}{space 3}-.0088159
+{txt}{space 12} {c |}
+{space 3}contother {c |}
+Modern Me..  {c |}{col 14}{res}{space 2} .0062918{col 26}{space 2} .0437586{col 37}{space 1}    0.14{col 46}{space 3}0.886{col 54}{space 4}-.0794734{col 67}{space 3} .0920571
+{txt}LARC/LAPM..  {c |}{col 14}{res}{space 2} .0524105{col 26}{space 2}  .054509{col 37}{space 1}    0.96{col 46}{space 3}0.336{col 54}{space 4}-.0544253{col 67}{space 3} .1592463
+{txt}{space 12} {c |}
+{space 6}nearHF {c |}
+{space 2}>= 2.5 km  {c |}{col 14}{res}{space 2} .0422291{col 26}{space 2} .0351901{col 37}{space 1}    1.20{col 46}{space 3}0.230{col 54}{space 4}-.0267493{col 67}{space 3} .1112075
+{txt}{space 1}1.ncontknow {c |}{col 14}{res}{space 2} .0251408{col 26}{space 2} .0333642{col 37}{space 1}    0.75{col 46}{space 3}0.451{col 54}{space 4}-.0402518{col 67}{space 3} .0905335
+{txt}{space 12} {c |}
+contspkpar~t {c |}
+{space 8}Yes  {c |}{col 14}{res}{space 2}-.1361498{col 26}{space 2} .0415137{col 37}{space 1}   -3.28{col 46}{space 3}0.001{col 54}{space 4}-.2175156{col 67}{space 3} -.054784
+{txt}{space 12} {c |}
+{space 3}contagree {c |}
+{space 8}Yes  {c |}{col 14}{res}{space 2}-.1770208{col 26}{space 2} .0415688{col 37}{space 1}   -4.26{col 46}{space 3}0.000{col 54}{space 4}-.2584952{col 67}{space 3}-.0955463
+{txt}condop_index {c |}{col 14}{res}{space 2} .0585833{col 26}{space 2} .0128805{col 37}{space 1}    4.55{col 46}{space 3}0.000{col 54}{space 4} .0333381{col 67}{space 3} .0838286
+{txt}{space 7}_cons {c |}{col 14}{res}{space 2}-.8555374{col 26}{space 2} .0915111{col 37}{space 1}   -9.35{col 46}{space 3}0.000{col 54}{space 4}-1.034899{col 67}{space 3}-.6761756
+{txt}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}{txt}
+{com}. eststo adj4
+{txt}
+{com}. 
+. esttab crude adj* using "${c -(}tables{c )-}/table_02.csv", ///
+>     title("Predictors of Unprotected Sex at Last Intercourse.") ///
+>     cells(`"b(fmt(%9.2f) star) ci( par("(" " - " ")") fmt(%9.2f))"') ///
+>         coeflabels("RR" "95% CI") ///
+>         scalars(ll chi2) ///
+>         eform wide label replace
+{res}{txt}(note: file C:/Users/cboyer.IPA/Desktop/GitHub/PSI-Womens-Condom/tables/table_02.csv not found)
+(output written to {browse  `"C:/Users/cboyer.IPA/Desktop/GitHub/PSI-Womens-Condom/tables/table_02.csv"'})
+
+{com}. 
+.         
+. /* =============================================================== 
+>    ====================== Robutness Checks ======================= 
+>    =============================================================== */
+. 
+. eststo clear
+{txt}
+{com}. 
+. mi estimate, post: ///
+>     glm nocondlast `demovars' `sexvars' `accessvars' `othervars', fam(poisson) link(log) vce(robust)
+{res}
+{txt}Multiple-imputation estimates{col 51}Imputations{col 67}= {res}        50
+{txt}Generalized linear models{col 51}Number of obs{col 67}= {res}      2388
+{txt}{col 51}Average RVI{col 67}= {res}    0.0567
+{txt}{col 51}Largest FMI{col 67}= {res}    0.4069
+{txt}DF adjustment:{ralign 15: {res:Large sample}}{col 51}DF:     min{col 67}= {res}    301.80
+{txt}{col 51}        avg{col 67}= {res}6006697.58
+{txt}{col 51}        max{col 67}= {res}  3.88e+07
+{txt}Model F test:{ralign 16: {res:Equal FMI}}{col 51}F({res}  20{txt},{res}310493.4{txt}){col 67}= {res}     26.20
+{txt}Within VCE type: {ralign 12:{res:Robust}}{col 51}Prob > F{col 67}= {res}    0.0000
+
+{txt}{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 1}  nocondlast{col 14}{c |}      Coef.{col 26}   Std. Err.{col 38}      t{col 46}   P>|t|{col 54}     [95% Con{col 67}f. Interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{space 4}1.gender {c |}{col 14}{res}{space 2}  .211209{col 26}{space 2} .0563104{col 37}{space 1}    3.75{col 46}{space 3}0.000{col 54}{space 4} .1008422{col 67}{space 3} .3215758
+{txt}{space 12} {c |}
+{space 3}edustatus {c |}
+{space 8}Yes  {c |}{col 14}{res}{space 2} .0669433{col 26}{space 2} .0498497{col 37}{space 1}    1.34{col 46}{space 3}0.179{col 54}{space 4}-.0307604{col 67}{space 3}  .164647
+{txt}{space 12} {c |}
+{space 8}educ {c |}
+{space 2}Secondary  {c |}{col 14}{res}{space 2} .0461161{col 26}{space 2} .0326565{col 37}{space 1}    1.41{col 46}{space 3}0.158{col 54}{space 4}-.0178895{col 67}{space 3} .1101217
+{txt}{space 5}Higher  {c |}{col 14}{res}{space 2}-.1143523{col 26}{space 2} .0809347{col 37}{space 1}   -1.41{col 46}{space 3}0.158{col 54}{space 4}-.2729815{col 67}{space 3} .0442768
+{txt}{space 12} {c |}
+{space 4}employmt {c |}
+{space 8}Yes  {c |}{col 14}{res}{space 2}-.0905835{col 26}{space 2} .0461014{col 37}{space 1}   -1.96{col 46}{space 3}0.049{col 54}{space 4}-.1809405{col 67}{space 3}-.0002264
+{txt}{space 12} {c |}
+{space 5}married {c |}
+{space 4}Married  {c |}{col 14}{res}{space 2} .4640492{col 26}{space 2} .0439374{col 37}{space 1}   10.56{col 46}{space 3}0.000{col 54}{space 4} .3779324{col 67}{space 3} .5501661
+{txt}{space 12} {c |}
+{space 5}poverty {c |}
+{space 2}10% - 20%  {c |}{col 14}{res}{space 2} .1997147{col 26}{space 2} .0636537{col 37}{space 1}    3.14{col 46}{space 3}0.002{col 54}{space 4} .0749557{col 67}{space 3} .3244736
+{txt}{space 3}{&ge}20%  {c |}{col 14}{res}{space 2} .2700739{col 26}{space 2} .0620975{col 37}{space 1}    4.35{col 46}{space 3}0.000{col 54}{space 4} .1483651{col 67}{space 3} .3917827
+{txt}{space 12} {c |}
+{space 3}npartners {c |}{col 14}{res}{space 2}-.1025612{col 26}{space 2} .0446463{col 37}{space 1}   -2.30{col 46}{space 3}0.022{col 54}{space 4}-.1901567{col 67}{space 3}-.0149658
+{txt}nintercourse {c |}{col 14}{res}{space 2}-.0321143{col 26}{space 2} .0154787{col 37}{space 1}   -2.07{col 46}{space 3}0.038{col 54}{space 4}-.0624734{col 67}{space 3}-.0017551
+{txt}{space 12} {c |}
+{space 1}c.npartners#{c |}
+{space 10}c. {c |}
+nintercourse {c |}{col 14}{res}{space 2} .0356598{col 26}{space 2} .0169946{col 37}{space 1}    2.10{col 46}{space 3}0.037{col 54}{space 4} .0022168{col 67}{space 3} .0691027
+{txt}{space 12} {c |}
+{space 3}nchildren {c |}
+{space 2}1 or more  {c |}{col 14}{res}{space 2} .1385865{col 26}{space 2} .0490089{col 37}{space 1}    2.83{col 46}{space 3}0.005{col 54}{space 4} .0425287{col 67}{space 3} .2346444
+{txt}{space 12} {c |}
+{space 9}sti {c |}
+{space 8}Yes  {c |}{col 14}{res}{space 2}-.0975311{col 26}{space 2} .0452637{col 37}{space 1}   -2.15{col 46}{space 3}0.031{col 54}{space 4}-.1862462{col 67}{space 3}-.0088159
+{txt}{space 12} {c |}
+{space 3}contother {c |}
+Modern Me..  {c |}{col 14}{res}{space 2} .0062918{col 26}{space 2} .0437586{col 37}{space 1}    0.14{col 46}{space 3}0.886{col 54}{space 4}-.0794734{col 67}{space 3} .0920571
+{txt}LARC/LAPM..  {c |}{col 14}{res}{space 2} .0524105{col 26}{space 2}  .054509{col 37}{space 1}    0.96{col 46}{space 3}0.336{col 54}{space 4}-.0544253{col 67}{space 3} .1592463
+{txt}{space 12} {c |}
+{space 6}nearHF {c |}
+{space 2}>= 2.5 km  {c |}{col 14}{res}{space 2} .0422291{col 26}{space 2} .0351901{col 37}{space 1}    1.20{col 46}{space 3}0.230{col 54}{space 4}-.0267493{col 67}{space 3} .1112075
+{txt}{space 1}1.ncontknow {c |}{col 14}{res}{space 2} .0251408{col 26}{space 2} .0333642{col 37}{space 1}    0.75{col 46}{space 3}0.451{col 54}{space 4}-.0402518{col 67}{space 3} .0905335
+{txt}{space 12} {c |}
+contspkpar~t {c |}
+{space 8}Yes  {c |}{col 14}{res}{space 2}-.1361498{col 26}{space 2} .0415137{col 37}{space 1}   -3.28{col 46}{space 3}0.001{col 54}{space 4}-.2175156{col 67}{space 3} -.054784
+{txt}{space 12} {c |}
+{space 3}contagree {c |}
+{space 8}Yes  {c |}{col 14}{res}{space 2}-.1770208{col 26}{space 2} .0415688{col 37}{space 1}   -4.26{col 46}{space 3}0.000{col 54}{space 4}-.2584952{col 67}{space 3}-.0955463
+{txt}condop_index {c |}{col 14}{res}{space 2} .0585833{col 26}{space 2} .0128805{col 37}{space 1}    4.55{col 46}{space 3}0.000{col 54}{space 4} .0333381{col 67}{space 3} .0838286
+{txt}{space 7}_cons {c |}{col 14}{res}{space 2}-.8555374{col 26}{space 2} .0915111{col 37}{space 1}   -9.35{col 46}{space 3}0.000{col 54}{space 4}-1.034899{col 67}{space 3}-.6761756
+{txt}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}{txt}
+{com}. eststo rob1
+{txt}
+{com}. mi estimate, post: ///
+>     glm nocondlast `demovars' `sexvars' `accessvars' `othervars', fam(binomial) link(log) vce(robust)
+{res}{err}{hline 2}Break{hline 2}
+{txt}{search r(1):r(1);}
+
+end of do-file
+{err}{hline 2}Break{hline 2}
+{txt}{search r(1):r(1);}
+
+end of do-file
+
+{err}{hline 2}Break{hline 2}
+{txt}{search r(1):r(1);}
+
+{com}. do "C:\Users\cboyer.IPA\AppData\Local\Temp\STD05000000.tmp"
+{txt}
+{com}. do 4_model.do
+{txt}
+{com}. /*========================================
+>   file:    4_model.do                    
+>   author:  christopher boyer             
+>            innovations for poverty action  
+>   date:    2016-12-18                      
+>   ========================================*/
+.  
+.  /* this file creates table 3, adjusted models 
+>     of risk factors for unprotected sex at
+>         last intercourse.
+>  */
+.  
+. use "${c -(}data{c )-}/maximum_diva_03_imputed.dta", clear
+{txt}
+{com}. 
+. * order the variables
+. #delimit ;
+{txt}delimiter now ;
+{com}. order gender
+>       age
+>           edustatus
+>           educ
+>           employmt
+>           married
+>           poverty
+>           sexage
+>           sexpartnernum
+>           sexpartner1mo
+>           nchildren
+>           sti
+>           contother
+>           nearHF
+>           ncontknow
+>           contspkpartnerrecent
+>           contagree
+>           condop_index
+>           cond6mo
+>           ward
+>           qnum;
+{txt}
+{com}. #delimit cr
+{txt}delimiter now cr
+{com}. 
+. cap which estout
+{txt}
+{com}. if _rc ssc install estout
+{txt}
+{com}. 
+. /* user defined program - combines crude models in the same column 
+>    for easy display */
+. cap program drop appendmodels
+{txt}
+{com}. program appendmodels, eclass
+{txt}  1{com}. version 13
+{txt}  2{com}.    syntax namelist
+{txt}  3{com}.    tempname b V tmp
+{txt}  4{com}.    foreach name of local namelist {c -(}
+{txt}  5{com}.        qui est restore `name'
+{txt}  6{com}.        mat `tmp' = e(b)
+{txt}  7{com}.        local eq1: coleq `tmp'
+{txt}  8{com}.        gettoken eq1 : eq1
+{txt}  9{com}.        mat `tmp' = `tmp'[1,"`eq1':"]
+{txt} 10{com}.        local cons = colnumb(`tmp',"_cons")
+{txt} 11{com}.        if `cons'<. & `cons'>1 {c -(}
+{txt} 12{com}.            mat `tmp' = `tmp'[1,1..`cons'-1]
+{txt} 13{com}.        {c )-}
+{txt} 14{com}.        mat `b' = nullmat(`b') , `tmp'
+{txt} 15{com}.        mat `tmp' = e(V)
+{txt} 16{com}.        mat `tmp' = `tmp'["`eq1':","`eq1':"]
+{txt} 17{com}.        if `cons'<. & `cons'>1 {c -(}
+{txt} 18{com}.            mat `tmp' = `tmp'[1..`cons'-1,1..`cons'-1]
+{txt} 19{com}.        {c )-}
+{txt} 20{com}.        capt confirm matrix `V'
+{txt} 21{com}.        if _rc {c -(}
+{txt} 22{com}.            mat `V' = `tmp'
+{txt} 23{com}.        {c )-}
+{txt} 24{com}.        else {c -(}
+{txt} 25{com}.            mat `V' = ///
+>         ( `V' , J(rowsof(`V'),colsof(`tmp'),0) ) \ ///
+>         ( J(rowsof(`tmp'),colsof(`V'),0) , `tmp' )
+{txt} 26{com}.        {c )-}
+{txt} 27{com}.    {c )-}
+{txt} 28{com}.    local names: colfullnames `b'
+{txt} 29{com}.    mat coln `V' = `names'
+{txt} 30{com}.    mat rown `V' = `names'
+{txt} 31{com}.    eret post `b' `V'
+{txt} 32{com}.    eret local cmd "whatever"
+{txt} 33{com}. end
+{txt}
+{com}. 
+. eststo clear
+{txt}
+{com}. 
+. 
+. * generate reverse outcome variable
+. g nocondlast = (condlast!=1)
+{txt}
+{com}. 
+. * construct variable list
+. ds _*, not
+{txt}{col 1}gender{col 15}poverty{col 29}contother{col 43}cond6mo{col 57}npartners
+{col 1}age{col 15}sexage{col 29}nearHF{col 43}ward{col 57}nintercourse
+{col 1}edustatus{col 15}sexpartner~m{col 29}ncontknow{col 43}qnum{col 57}nocondlast
+{col 1}educ{col 15}sexpartner~o{col 29}contspkpar~t{col 43}condop_m
+{col 1}employmt{col 15}nchildren{col 29}contagree{col 43}condlast
+{col 1}married{col 15}sti{col 29}condop_index{col 43}facility_km
+
+{com}. local all        "`r(varlist)'"
+{txt}
+{com}. local exclude    `""qnum" "age" "ward" "cond6mo" "condlast" "nocondlast" "facility_km" "condop_m" "childnum" "sexpartnernum" "sexpartner1mo"'
+{txt}
+{com}. local contvars   `""facility_km" "percpoor" "sexage" "npartners" "nintercourse" "childnum" "condop_index""'
+{txt}
+{com}. local demovars   "i.gender i.edustatus i.educ i.employmt i.married i.poverty"
+{txt}
+{com}. local sexvars    "c.npartners##c.nintercourse i.nchildren i.sti i.contother"
+{txt}
+{com}. local othervars  "i.ncontknow i.contspkpartnerrecent i.contagree condop_index"
+{txt}
+{com}. local accessvars "i.nearHF"
+{txt}
+{com}. local loopvars : list all - exclude
+{txt}
+{com}. 
+. /* loop through crude variables and estimate relative risk model; 
+>    if factor variable add i. prefix to estimate across levels */
+.         
+. local i = 1     
+{txt}
+{com}. local mlist ""
+{txt}
+{com}. qui {c -(}
+crude model of gender
+crude model of edustatus
+crude model of educ
+crude model of employmt
+crude model of married
+crude model of poverty
+crude model of sexage
+crude model of nchildren
+crude model of sti
+crude model of contother
+crude model of nearHF
+crude model of ncontknow
+crude model of contspkpartnerrecent
+crude model of contagree
+crude model of condop_index
+crude model of npartners
+crude model of nintercourse
+{txt}
+{com}. 
+. * combined crude models
+. eststo crude : appendmodels `mlist'
+{txt}
+{com}. 
+. * adjusted models
+. mi estimate, post: ///
+>     glm nocondlast `demovars', fam(poisson) link(log) vce(robust)
+{res}
+{txt}Multiple-imputation estimates{col 51}Imputations{col 67}= {res}        50
+{txt}Generalized linear models{col 51}Number of obs{col 67}= {res}      2388
+{txt}{col 51}Average RVI{col 67}= {res}    0.0004
+{txt}{col 51}Largest FMI{col 67}= {res}    0.0033
+{txt}DF adjustment:{ralign 15: {res:Large sample}}{col 51}DF:     min{col 67}= {res}4532393.80
+{txt}{col 51}        avg{col 67}= {res}  4.03e+17
+{txt}{col 51}        max{col 67}= {res}  3.63e+18
+{txt}Model F test:{ralign 16: {res:Equal FMI}}{col 51}F({res}   8{txt},{res} 2.2e+09{txt}){col 67}= {res}     57.76
+{txt}Within VCE type: {ralign 12:{res:Robust}}{col 51}Prob > F{col 67}= {res}    0.0000
+
+{txt}{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 1}  nocondlast{col 14}{c |}      Coef.{col 26}   Std. Err.{col 38}      t{col 46}   P>|t|{col 54}     [95% Con{col 67}f. Interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{space 4}1.gender {c |}{col 14}{res}{space 2} .2863939{col 26}{space 2} .0529637{col 37}{space 1}    5.41{col 46}{space 3}0.000{col 54}{space 4}  .182587{col 67}{space 3} .3902009
+{txt}{space 12} {c |}
+{space 3}edustatus {c |}
+{space 8}Yes  {c |}{col 14}{res}{space 2} .0741435{col 26}{space 2}  .050083{col 37}{space 1}    1.48{col 46}{space 3}0.139{col 54}{space 4}-.0240175{col 67}{space 3} .1723044
+{txt}{space 12} {c |}
+{space 8}educ {c |}
+{space 2}Secondary  {c |}{col 14}{res}{space 2}-.0090536{col 26}{space 2}  .032579{col 37}{space 1}   -0.28{col 46}{space 3}0.781{col 54}{space 4}-.0729073{col 67}{space 3} .0548001
+{txt}{space 5}Higher  {c |}{col 14}{res}{space 2}-.2373102{col 26}{space 2} .0799067{col 37}{space 1}   -2.97{col 46}{space 3}0.003{col 54}{space 4}-.3939244{col 67}{space 3} -.080696
+{txt}{space 12} {c |}
+{space 4}employmt {c |}
+{space 8}Yes  {c |}{col 14}{res}{space 2}-.1150094{col 26}{space 2} .0457682{col 37}{space 1}   -2.51{col 46}{space 3}0.012{col 54}{space 4}-.2047134{col 67}{space 3}-.0253054
+{txt}{space 12} {c |}
+{space 5}married {c |}
+{space 4}Married  {c |}{col 14}{res}{space 2} .4626901{col 26}{space 2} .0370015{col 37}{space 1}   12.50{col 46}{space 3}0.000{col 54}{space 4} .3901684{col 67}{space 3} .5352117
+{txt}{space 12} {c |}
+{space 5}poverty {c |}
+{space 2}10% - 20%  {c |}{col 14}{res}{space 2} .2122101{col 26}{space 2} .0645819{col 37}{space 1}    3.29{col 46}{space 3}0.001{col 54}{space 4} .0856319{col 67}{space 3} .3387883
+{txt}{space 3}{&ge}20%  {c |}{col 14}{res}{space 2} .2970518{col 26}{space 2} .0627385{col 37}{space 1}    4.73{col 46}{space 3}0.000{col 54}{space 4} .1740866{col 67}{space 3} .4200171
+{txt}{space 12} {c |}
+{space 7}_cons {c |}{col 14}{res}{space 2}-1.120598{col 26}{space 2} .0789256{col 37}{space 1}  -14.20{col 46}{space 3}0.000{col 54}{space 4}-1.275289{col 67}{space 3} -.965907
+{txt}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}{txt}
+{com}. eststo adj1
+{txt}
+{com}. mi estimate, post: ///
+>     glm nocondlast `demovars' `sexvars', fam(poisson) link(log) vce(robust)
+{res}
+{txt}Multiple-imputation estimates{col 51}Imputations{col 67}= {res}        50
+{txt}Generalized linear models{col 51}Number of obs{col 67}= {res}      2388
+{txt}{col 51}Average RVI{col 67}= {res}    0.0712
+{txt}{col 51}Largest FMI{col 67}= {res}    0.4296
+{txt}DF adjustment:{ralign 15: {res:Large sample}}{col 51}DF:     min{col 67}= {res}    270.75
+{txt}{col 51}        avg{col 67}= {res}  2.63e+07
+{txt}{col 51}        max{col 67}= {res}  1.99e+08
+{txt}Model F test:{ralign 16: {res:Equal FMI}}{col 51}F({res}  15{txt},{res}146519.7{txt}){col 67}= {res}     29.43
+{txt}Within VCE type: {ralign 12:{res:Robust}}{col 51}Prob > F{col 67}= {res}    0.0000
+
+{txt}{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 1}  nocondlast{col 14}{c |}      Coef.{col 26}   Std. Err.{col 38}      t{col 46}   P>|t|{col 54}     [95% Con{col 67}f. Interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{space 4}1.gender {c |}{col 14}{res}{space 2} .2231704{col 26}{space 2} .0566009{col 37}{space 1}    3.94{col 46}{space 3}0.000{col 54}{space 4} .1122342{col 67}{space 3} .3341066
+{txt}{space 12} {c |}
+{space 3}edustatus {c |}
+{space 8}Yes  {c |}{col 14}{res}{space 2} .0699487{col 26}{space 2} .0501538{col 37}{space 1}    1.39{col 46}{space 3}0.163{col 54}{space 4}-.0283509{col 67}{space 3} .1682483
+{txt}{space 12} {c |}
+{space 8}educ {c |}
+{space 2}Secondary  {c |}{col 14}{res}{space 2}-.0039109{col 26}{space 2} .0326548{col 37}{space 1}   -0.12{col 46}{space 3}0.905{col 54}{space 4}-.0679131{col 67}{space 3} .0600914
+{txt}{space 5}Higher  {c |}{col 14}{res}{space 2}-.2118237{col 26}{space 2} .0803481{col 37}{space 1}   -2.64{col 46}{space 3}0.008{col 54}{space 4}-.3693032{col 67}{space 3}-.0543443
+{txt}{space 12} {c |}
+{space 4}employmt {c |}
+{space 8}Yes  {c |}{col 14}{res}{space 2}-.1117639{col 26}{space 2} .0459288{col 37}{space 1}   -2.43{col 46}{space 3}0.015{col 54}{space 4}-.2017827{col 67}{space 3} -.021745
+{txt}{space 12} {c |}
+{space 5}married {c |}
+{space 4}Married  {c |}{col 14}{res}{space 2} .4437886{col 26}{space 2} .0440739{col 37}{space 1}   10.07{col 46}{space 3}0.000{col 54}{space 4} .3574043{col 67}{space 3} .5301729
+{txt}{space 12} {c |}
+{space 5}poverty {c |}
+{space 2}10% - 20%  {c |}{col 14}{res}{space 2} .2050135{col 26}{space 2} .0646848{col 37}{space 1}    3.17{col 46}{space 3}0.002{col 54}{space 4} .0782336{col 67}{space 3} .3317935
+{txt}{space 3}{&ge}20%  {c |}{col 14}{res}{space 2} .2881274{col 26}{space 2} .0629966{col 37}{space 1}    4.57{col 46}{space 3}0.000{col 54}{space 4} .1646562{col 67}{space 3} .4115985
+{txt}{space 12} {c |}
+{space 3}npartners {c |}{col 14}{res}{space 2}-.0921457{col 26}{space 2} .0431382{col 37}{space 1}   -2.14{col 46}{space 3}0.033{col 54}{space 4}-.1767963{col 67}{space 3} -.007495
+{txt}nintercourse {c |}{col 14}{res}{space 2}-.0263503{col 26}{space 2} .0150805{col 37}{space 1}   -1.75{col 46}{space 3}0.081{col 54}{space 4}-.0559374{col 67}{space 3} .0032367
+{txt}{space 12} {c |}
+{space 1}c.npartners#{c |}
+{space 10}c. {c |}
+nintercourse {c |}{col 14}{res}{space 2} .0330365{col 26}{space 2} .0169151{col 37}{space 1}    1.95{col 46}{space 3}0.052{col 54}{space 4}-.0002654{col 67}{space 3} .0663384
+{txt}{space 12} {c |}
+{space 3}nchildren {c |}
+{space 2}1 or more  {c |}{col 14}{res}{space 2} .1245719{col 26}{space 2} .0507118{col 37}{space 1}    2.46{col 46}{space 3}0.014{col 54}{space 4} .0251762{col 67}{space 3} .2239675
+{txt}{space 12} {c |}
+{space 9}sti {c |}
+{space 8}Yes  {c |}{col 14}{res}{space 2}-.1163593{col 26}{space 2} .0457622{col 37}{space 1}   -2.54{col 46}{space 3}0.011{col 54}{space 4}-.2060515{col 67}{space 3}-.0266671
+{txt}{space 12} {c |}
+{space 3}contother {c |}
+Modern Me..  {c |}{col 14}{res}{space 2}-.0450128{col 26}{space 2}  .043939{col 37}{space 1}   -1.02{col 46}{space 3}0.306{col 54}{space 4}-.1311317{col 67}{space 3}  .041106
+{txt}LARC/LAPM..  {c |}{col 14}{res}{space 2} .0067541{col 26}{space 2} .0536337{col 37}{space 1}    0.13{col 46}{space 3}0.900{col 54}{space 4}-.0983663{col 67}{space 3} .1118744
+{txt}{space 12} {c |}
+{space 7}_cons {c |}{col 14}{res}{space 2} -.960789{col 26}{space 2} .0908911{col 37}{space 1}  -10.57{col 46}{space 3}0.000{col 54}{space 4}-1.138936{col 67}{space 3}-.7826424
+{txt}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}{txt}
+{com}. eststo adj2
+{txt}
+{com}. mi estimate, post: ///
+>     glm nocondlast `demovars' `sexvars' `accessvars', fam(poisson) link(log) vce(robust)
+{res}
+{txt}Multiple-imputation estimates{col 51}Imputations{col 67}= {res}        50
+{txt}Generalized linear models{col 51}Number of obs{col 67}= {res}      2388
+{txt}{col 51}Average RVI{col 67}= {res}    0.0712
+{txt}{col 51}Largest FMI{col 67}= {res}    0.4300
+{txt}DF adjustment:{ralign 15: {res:Large sample}}{col 51}DF:     min{col 67}= {res}    270.30
+{txt}{col 51}        avg{col 67}= {res}  1.71e+07
+{txt}{col 51}        max{col 67}= {res}  1.84e+08
+{txt}Model F test:{ralign 16: {res:Equal FMI}}{col 51}F({res}  16{txt},{res}157648.6{txt}){col 67}= {res}     27.80
+{txt}Within VCE type: {ralign 12:{res:Robust}}{col 51}Prob > F{col 67}= {res}    0.0000
+
+{txt}{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 1}  nocondlast{col 14}{c |}      Coef.{col 26}   Std. Err.{col 38}      t{col 46}   P>|t|{col 54}     [95% Con{col 67}f. Interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{space 4}1.gender {c |}{col 14}{res}{space 2}  .223463{col 26}{space 2} .0565293{col 37}{space 1}    3.95{col 46}{space 3}0.000{col 54}{space 4} .1126673{col 67}{space 3} .3342588
+{txt}{space 12} {c |}
+{space 3}edustatus {c |}
+{space 8}Yes  {c |}{col 14}{res}{space 2} .0701315{col 26}{space 2} .0501999{col 37}{space 1}    1.40{col 46}{space 3}0.162{col 54}{space 4}-.0282586{col 67}{space 3} .1685216
+{txt}{space 12} {c |}
+{space 8}educ {c |}
+{space 2}Secondary  {c |}{col 14}{res}{space 2}-.0018172{col 26}{space 2} .0326755{col 37}{space 1}   -0.06{col 46}{space 3}0.956{col 54}{space 4}  -.06586{col 67}{space 3} .0622256
+{txt}{space 5}Higher  {c |}{col 14}{res}{space 2}-.2070328{col 26}{space 2} .0804995{col 37}{space 1}   -2.57{col 46}{space 3}0.010{col 54}{space 4} -.364809{col 67}{space 3}-.0492566
+{txt}{space 12} {c |}
+{space 4}employmt {c |}
+{space 8}Yes  {c |}{col 14}{res}{space 2}-.1123287{col 26}{space 2} .0459615{col 37}{space 1}   -2.44{col 46}{space 3}0.015{col 54}{space 4}-.2024116{col 67}{space 3}-.0222459
+{txt}{space 12} {c |}
+{space 5}married {c |}
+{space 4}Married  {c |}{col 14}{res}{space 2} .4390879{col 26}{space 2} .0442624{col 37}{space 1}    9.92{col 46}{space 3}0.000{col 54}{space 4}  .352334{col 67}{space 3} .5258417
+{txt}{space 12} {c |}
+{space 5}poverty {c |}
+{space 2}10% - 20%  {c |}{col 14}{res}{space 2} .2047601{col 26}{space 2}  .064756{col 37}{space 1}    3.16{col 46}{space 3}0.002{col 54}{space 4} .0778407{col 67}{space 3} .3316796
+{txt}{space 3}{&ge}20%  {c |}{col 14}{res}{space 2} .2820234{col 26}{space 2} .0632667{col 37}{space 1}    4.46{col 46}{space 3}0.000{col 54}{space 4}  .158023{col 67}{space 3} .4060239
+{txt}{space 12} {c |}
+{space 3}npartners {c |}{col 14}{res}{space 2}-.0923573{col 26}{space 2} .0431214{col 37}{space 1}   -2.14{col 46}{space 3}0.032{col 54}{space 4}-.1769746{col 67}{space 3}  -.00774
+{txt}nintercourse {c |}{col 14}{res}{space 2}-.0259279{col 26}{space 2}  .015105{col 37}{space 1}   -1.72{col 46}{space 3}0.086{col 54}{space 4}-.0555629{col 67}{space 3} .0037071
+{txt}{space 12} {c |}
+{space 1}c.npartners#{c |}
+{space 10}c. {c |}
+nintercourse {c |}{col 14}{res}{space 2} .0331089{col 26}{space 2} .0169544{col 37}{space 1}    1.95{col 46}{space 3}0.052{col 54}{space 4}-.0002705{col 67}{space 3} .0664883
+{txt}{space 12} {c |}
+{space 3}nchildren {c |}
+{space 2}1 or more  {c |}{col 14}{res}{space 2} .1237964{col 26}{space 2} .0507159{col 37}{space 1}    2.44{col 46}{space 3}0.015{col 54}{space 4} .0243926{col 67}{space 3} .2232001
+{txt}{space 12} {c |}
+{space 9}sti {c |}
+{space 8}Yes  {c |}{col 14}{res}{space 2}-.1148095{col 26}{space 2} .0457427{col 37}{space 1}   -2.51{col 46}{space 3}0.012{col 54}{space 4}-.2044635{col 67}{space 3}-.0251554
+{txt}{space 12} {c |}
+{space 3}contother {c |}
+Modern Me..  {c |}{col 14}{res}{space 2}-.0449874{col 26}{space 2} .0438894{col 37}{space 1}   -1.03{col 46}{space 3}0.305{col 54}{space 4}-.1310091{col 67}{space 3} .0410342
+{txt}LARC/LAPM..  {c |}{col 14}{res}{space 2} .0072719{col 26}{space 2} .0535612{col 37}{space 1}    0.14{col 46}{space 3}0.892{col 54}{space 4}-.0977064{col 67}{space 3} .1122502
+{txt}{space 12} {c |}
+{space 6}nearHF {c |}
+{space 2}>= 2.5 km  {c |}{col 14}{res}{space 2} .0437164{col 26}{space 2} .0355605{col 37}{space 1}    1.23{col 46}{space 3}0.219{col 54}{space 4} -.025988{col 67}{space 3} .1134209
+{txt}{space 7}_cons {c |}{col 14}{res}{space 2}-.9670181{col 26}{space 2} .0911825{col 37}{space 1}  -10.61{col 46}{space 3}0.000{col 54}{space 4}-1.145736{col 67}{space 3}-.7883004
+{txt}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}{txt}
+{com}. eststo adj3
+{txt}
+{com}. mi estimate, post: ///
+>     glm nocondlast `demovars' `sexvars' `accessvars' `othervars', fam(poisson) link(log) vce(robust)
+{res}
+{txt}Multiple-imputation estimates{col 51}Imputations{col 67}= {res}        50
+{txt}Generalized linear models{col 51}Number of obs{col 67}= {res}      2388
+{txt}{col 51}Average RVI{col 67}= {res}    0.0567
+{txt}{col 51}Largest FMI{col 67}= {res}    0.4069
+{txt}DF adjustment:{ralign 15: {res:Large sample}}{col 51}DF:     min{col 67}= {res}    301.80
+{txt}{col 51}        avg{col 67}= {res}6006697.58
+{txt}{col 51}        max{col 67}= {res}  3.88e+07
+{txt}Model F test:{ralign 16: {res:Equal FMI}}{col 51}F({res}  20{txt},{res}310493.4{txt}){col 67}= {res}     26.20
+{txt}Within VCE type: {ralign 12:{res:Robust}}{col 51}Prob > F{col 67}= {res}    0.0000
+
+{txt}{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 1}  nocondlast{col 14}{c |}      Coef.{col 26}   Std. Err.{col 38}      t{col 46}   P>|t|{col 54}     [95% Con{col 67}f. Interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{space 4}1.gender {c |}{col 14}{res}{space 2}  .211209{col 26}{space 2} .0563104{col 37}{space 1}    3.75{col 46}{space 3}0.000{col 54}{space 4} .1008422{col 67}{space 3} .3215758
+{txt}{space 12} {c |}
+{space 3}edustatus {c |}
+{space 8}Yes  {c |}{col 14}{res}{space 2} .0669433{col 26}{space 2} .0498497{col 37}{space 1}    1.34{col 46}{space 3}0.179{col 54}{space 4}-.0307604{col 67}{space 3}  .164647
+{txt}{space 12} {c |}
+{space 8}educ {c |}
+{space 2}Secondary  {c |}{col 14}{res}{space 2} .0461161{col 26}{space 2} .0326565{col 37}{space 1}    1.41{col 46}{space 3}0.158{col 54}{space 4}-.0178895{col 67}{space 3} .1101217
+{txt}{space 5}Higher  {c |}{col 14}{res}{space 2}-.1143523{col 26}{space 2} .0809347{col 37}{space 1}   -1.41{col 46}{space 3}0.158{col 54}{space 4}-.2729815{col 67}{space 3} .0442768
+{txt}{space 12} {c |}
+{space 4}employmt {c |}
+{space 8}Yes  {c |}{col 14}{res}{space 2}-.0905835{col 26}{space 2} .0461014{col 37}{space 1}   -1.96{col 46}{space 3}0.049{col 54}{space 4}-.1809405{col 67}{space 3}-.0002264
+{txt}{space 12} {c |}
+{space 5}married {c |}
+{space 4}Married  {c |}{col 14}{res}{space 2} .4640492{col 26}{space 2} .0439374{col 37}{space 1}   10.56{col 46}{space 3}0.000{col 54}{space 4} .3779324{col 67}{space 3} .5501661
+{txt}{space 12} {c |}
+{space 5}poverty {c |}
+{space 2}10% - 20%  {c |}{col 14}{res}{space 2} .1997147{col 26}{space 2} .0636537{col 37}{space 1}    3.14{col 46}{space 3}0.002{col 54}{space 4} .0749557{col 67}{space 3} .3244736
+{txt}{space 3}{&ge}20%  {c |}{col 14}{res}{space 2} .2700739{col 26}{space 2} .0620975{col 37}{space 1}    4.35{col 46}{space 3}0.000{col 54}{space 4} .1483651{col 67}{space 3} .3917827
+{txt}{space 12} {c |}
+{space 3}npartners {c |}{col 14}{res}{space 2}-.1025612{col 26}{space 2} .0446463{col 37}{space 1}   -2.30{col 46}{space 3}0.022{col 54}{space 4}-.1901567{col 67}{space 3}-.0149658
+{txt}nintercourse {c |}{col 14}{res}{space 2}-.0321143{col 26}{space 2} .0154787{col 37}{space 1}   -2.07{col 46}{space 3}0.038{col 54}{space 4}-.0624734{col 67}{space 3}-.0017551
+{txt}{space 12} {c |}
+{space 1}c.npartners#{c |}
+{space 10}c. {c |}
+nintercourse {c |}{col 14}{res}{space 2} .0356598{col 26}{space 2} .0169946{col 37}{space 1}    2.10{col 46}{space 3}0.037{col 54}{space 4} .0022168{col 67}{space 3} .0691027
+{txt}{space 12} {c |}
+{space 3}nchildren {c |}
+{space 2}1 or more  {c |}{col 14}{res}{space 2} .1385865{col 26}{space 2} .0490089{col 37}{space 1}    2.83{col 46}{space 3}0.005{col 54}{space 4} .0425287{col 67}{space 3} .2346444
+{txt}{space 12} {c |}
+{space 9}sti {c |}
+{space 8}Yes  {c |}{col 14}{res}{space 2}-.0975311{col 26}{space 2} .0452637{col 37}{space 1}   -2.15{col 46}{space 3}0.031{col 54}{space 4}-.1862462{col 67}{space 3}-.0088159
+{txt}{space 12} {c |}
+{space 3}contother {c |}
+Modern Me..  {c |}{col 14}{res}{space 2} .0062918{col 26}{space 2} .0437586{col 37}{space 1}    0.14{col 46}{space 3}0.886{col 54}{space 4}-.0794734{col 67}{space 3} .0920571
+{txt}LARC/LAPM..  {c |}{col 14}{res}{space 2} .0524105{col 26}{space 2}  .054509{col 37}{space 1}    0.96{col 46}{space 3}0.336{col 54}{space 4}-.0544253{col 67}{space 3} .1592463
+{txt}{space 12} {c |}
+{space 6}nearHF {c |}
+{space 2}>= 2.5 km  {c |}{col 14}{res}{space 2} .0422291{col 26}{space 2} .0351901{col 37}{space 1}    1.20{col 46}{space 3}0.230{col 54}{space 4}-.0267493{col 67}{space 3} .1112075
+{txt}{space 1}1.ncontknow {c |}{col 14}{res}{space 2} .0251408{col 26}{space 2} .0333642{col 37}{space 1}    0.75{col 46}{space 3}0.451{col 54}{space 4}-.0402518{col 67}{space 3} .0905335
+{txt}{space 12} {c |}
+contspkpar~t {c |}
+{space 8}Yes  {c |}{col 14}{res}{space 2}-.1361498{col 26}{space 2} .0415137{col 37}{space 1}   -3.28{col 46}{space 3}0.001{col 54}{space 4}-.2175156{col 67}{space 3} -.054784
+{txt}{space 12} {c |}
+{space 3}contagree {c |}
+{space 8}Yes  {c |}{col 14}{res}{space 2}-.1770208{col 26}{space 2} .0415688{col 37}{space 1}   -4.26{col 46}{space 3}0.000{col 54}{space 4}-.2584952{col 67}{space 3}-.0955463
+{txt}condop_index {c |}{col 14}{res}{space 2} .0585833{col 26}{space 2} .0128805{col 37}{space 1}    4.55{col 46}{space 3}0.000{col 54}{space 4} .0333381{col 67}{space 3} .0838286
+{txt}{space 7}_cons {c |}{col 14}{res}{space 2}-.8555374{col 26}{space 2} .0915111{col 37}{space 1}   -9.35{col 46}{space 3}0.000{col 54}{space 4}-1.034899{col 67}{space 3}-.6761756
+{txt}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}{txt}
+{com}. eststo adj4
+{txt}
+{com}. 
+. esttab crude adj* using "${c -(}tables{c )-}/table_02.csv", ///
+>     title("Predictors of Unprotected Sex at Last Intercourse.") ///
+>     cells(`"b(fmt(%9.2f) star) ci( par("(" " - " ")") fmt(%9.2f))"') ///
+>         coeflabels("RR" "95% CI") ///
+>         scalars(ll chi2) ///
+>         eform wide label replace
+{res}{txt}(output written to {browse  `"C:/Users/cboyer.IPA/Desktop/GitHub/PSI-Womens-Condom/tables/table_02.csv"'})
+
+{com}. 
+.         
+. /* =============================================================== 
+>    ====================== Robutness Checks ======================= 
+>    =============================================================== */
+. 
+. eststo clear
+{txt}
+{com}. 
+. mi estimate, post: ///
+>     glm nocondlast `demovars' `sexvars' `accessvars' `othervars', fam(poisson) link(log) vce(robust)
+{res}
+{txt}Multiple-imputation estimates{col 51}Imputations{col 67}= {res}        50
+{txt}Generalized linear models{col 51}Number of obs{col 67}= {res}      2388
+{txt}{col 51}Average RVI{col 67}= {res}    0.0567
+{txt}{col 51}Largest FMI{col 67}= {res}    0.4069
+{txt}DF adjustment:{ralign 15: {res:Large sample}}{col 51}DF:     min{col 67}= {res}    301.80
+{txt}{col 51}        avg{col 67}= {res}6006697.58
+{txt}{col 51}        max{col 67}= {res}  3.88e+07
+{txt}Model F test:{ralign 16: {res:Equal FMI}}{col 51}F({res}  20{txt},{res}310493.4{txt}){col 67}= {res}     26.20
+{txt}Within VCE type: {ralign 12:{res:Robust}}{col 51}Prob > F{col 67}= {res}    0.0000
+
+{txt}{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 1}  nocondlast{col 14}{c |}      Coef.{col 26}   Std. Err.{col 38}      t{col 46}   P>|t|{col 54}     [95% Con{col 67}f. Interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{space 4}1.gender {c |}{col 14}{res}{space 2}  .211209{col 26}{space 2} .0563104{col 37}{space 1}    3.75{col 46}{space 3}0.000{col 54}{space 4} .1008422{col 67}{space 3} .3215758
+{txt}{space 12} {c |}
+{space 3}edustatus {c |}
+{space 8}Yes  {c |}{col 14}{res}{space 2} .0669433{col 26}{space 2} .0498497{col 37}{space 1}    1.34{col 46}{space 3}0.179{col 54}{space 4}-.0307604{col 67}{space 3}  .164647
+{txt}{space 12} {c |}
+{space 8}educ {c |}
+{space 2}Secondary  {c |}{col 14}{res}{space 2} .0461161{col 26}{space 2} .0326565{col 37}{space 1}    1.41{col 46}{space 3}0.158{col 54}{space 4}-.0178895{col 67}{space 3} .1101217
+{txt}{space 5}Higher  {c |}{col 14}{res}{space 2}-.1143523{col 26}{space 2} .0809347{col 37}{space 1}   -1.41{col 46}{space 3}0.158{col 54}{space 4}-.2729815{col 67}{space 3} .0442768
+{txt}{space 12} {c |}
+{space 4}employmt {c |}
+{space 8}Yes  {c |}{col 14}{res}{space 2}-.0905835{col 26}{space 2} .0461014{col 37}{space 1}   -1.96{col 46}{space 3}0.049{col 54}{space 4}-.1809405{col 67}{space 3}-.0002264
+{txt}{space 12} {c |}
+{space 5}married {c |}
+{space 4}Married  {c |}{col 14}{res}{space 2} .4640492{col 26}{space 2} .0439374{col 37}{space 1}   10.56{col 46}{space 3}0.000{col 54}{space 4} .3779324{col 67}{space 3} .5501661
+{txt}{space 12} {c |}
+{space 5}poverty {c |}
+{space 2}10% - 20%  {c |}{col 14}{res}{space 2} .1997147{col 26}{space 2} .0636537{col 37}{space 1}    3.14{col 46}{space 3}0.002{col 54}{space 4} .0749557{col 67}{space 3} .3244736
+{txt}{space 3}{&ge}20%  {c |}{col 14}{res}{space 2} .2700739{col 26}{space 2} .0620975{col 37}{space 1}    4.35{col 46}{space 3}0.000{col 54}{space 4} .1483651{col 67}{space 3} .3917827
+{txt}{space 12} {c |}
+{space 3}npartners {c |}{col 14}{res}{space 2}-.1025612{col 26}{space 2} .0446463{col 37}{space 1}   -2.30{col 46}{space 3}0.022{col 54}{space 4}-.1901567{col 67}{space 3}-.0149658
+{txt}nintercourse {c |}{col 14}{res}{space 2}-.0321143{col 26}{space 2} .0154787{col 37}{space 1}   -2.07{col 46}{space 3}0.038{col 54}{space 4}-.0624734{col 67}{space 3}-.0017551
+{txt}{space 12} {c |}
+{space 1}c.npartners#{c |}
+{space 10}c. {c |}
+nintercourse {c |}{col 14}{res}{space 2} .0356598{col 26}{space 2} .0169946{col 37}{space 1}    2.10{col 46}{space 3}0.037{col 54}{space 4} .0022168{col 67}{space 3} .0691027
+{txt}{space 12} {c |}
+{space 3}nchildren {c |}
+{space 2}1 or more  {c |}{col 14}{res}{space 2} .1385865{col 26}{space 2} .0490089{col 37}{space 1}    2.83{col 46}{space 3}0.005{col 54}{space 4} .0425287{col 67}{space 3} .2346444
+{txt}{space 12} {c |}
+{space 9}sti {c |}
+{space 8}Yes  {c |}{col 14}{res}{space 2}-.0975311{col 26}{space 2} .0452637{col 37}{space 1}   -2.15{col 46}{space 3}0.031{col 54}{space 4}-.1862462{col 67}{space 3}-.0088159
+{txt}{space 12} {c |}
+{space 3}contother {c |}
+Modern Me..  {c |}{col 14}{res}{space 2} .0062918{col 26}{space 2} .0437586{col 37}{space 1}    0.14{col 46}{space 3}0.886{col 54}{space 4}-.0794734{col 67}{space 3} .0920571
+{txt}LARC/LAPM..  {c |}{col 14}{res}{space 2} .0524105{col 26}{space 2}  .054509{col 37}{space 1}    0.96{col 46}{space 3}0.336{col 54}{space 4}-.0544253{col 67}{space 3} .1592463
+{txt}{space 12} {c |}
+{space 6}nearHF {c |}
+{space 2}>= 2.5 km  {c |}{col 14}{res}{space 2} .0422291{col 26}{space 2} .0351901{col 37}{space 1}    1.20{col 46}{space 3}0.230{col 54}{space 4}-.0267493{col 67}{space 3} .1112075
+{txt}{space 1}1.ncontknow {c |}{col 14}{res}{space 2} .0251408{col 26}{space 2} .0333642{col 37}{space 1}    0.75{col 46}{space 3}0.451{col 54}{space 4}-.0402518{col 67}{space 3} .0905335
+{txt}{space 12} {c |}
+contspkpar~t {c |}
+{space 8}Yes  {c |}{col 14}{res}{space 2}-.1361498{col 26}{space 2} .0415137{col 37}{space 1}   -3.28{col 46}{space 3}0.001{col 54}{space 4}-.2175156{col 67}{space 3} -.054784
+{txt}{space 12} {c |}
+{space 3}contagree {c |}
+{space 8}Yes  {c |}{col 14}{res}{space 2}-.1770208{col 26}{space 2} .0415688{col 37}{space 1}   -4.26{col 46}{space 3}0.000{col 54}{space 4}-.2584952{col 67}{space 3}-.0955463
+{txt}condop_index {c |}{col 14}{res}{space 2} .0585833{col 26}{space 2} .0128805{col 37}{space 1}    4.55{col 46}{space 3}0.000{col 54}{space 4} .0333381{col 67}{space 3} .0838286
+{txt}{space 7}_cons {c |}{col 14}{res}{space 2}-.8555374{col 26}{space 2} .0915111{col 37}{space 1}   -9.35{col 46}{space 3}0.000{col 54}{space 4}-1.034899{col 67}{space 3}-.6761756
+{txt}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}{txt}
+{com}. eststo rob1
+{txt}
+{com}. /*mi estimate, post: ///
+>     glm nocondlast `demovars' `sexvars' `accessvars' `othervars', fam(binomial) link(log) vce(robust)
+> eststo rob2*/
+. mi estimate, post: ///
+>     logit nocondlast `demovars' `sexvars' `accessvars' `othervars', vce(robust)
+{res}
+{txt}Multiple-imputation estimates{col 51}Imputations{col 67}= {res}        50
+{txt}Logistic regression{col 51}Number of obs{col 67}= {res}      2388
+{txt}{col 51}Average RVI{col 67}= {res}    0.0444
+{txt}{col 51}Largest FMI{col 67}= {res}    0.3324
+{txt}DF adjustment:{ralign 15: {res:Large sample}}{col 51}DF:     min{col 67}= {res}    451.56
+{txt}{col 51}        avg{col 67}= {res}4728610.01
+{txt}{col 51}        max{col 67}= {res}  2.55e+07
+{txt}Model F test:{ralign 16: {res:Equal FMI}}{col 51}F({res}  20{txt},{res}491366.5{txt}){col 67}= {res}     20.71
+{txt}Within VCE type: {ralign 12:{res:Robust}}{col 51}Prob > F{col 67}= {res}    0.0000
+
+{txt}{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 1}  nocondlast{col 14}{c |}      Coef.{col 26}   Std. Err.{col 38}      t{col 46}   P>|t|{col 54}     [95% Con{col 67}f. Interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{space 4}1.gender {c |}{col 14}{res}{space 2} .4646491{col 26}{space 2} .1186434{col 37}{space 1}    3.92{col 46}{space 3}0.000{col 54}{space 4} .2321113{col 67}{space 3} .6971868
+{txt}{space 12} {c |}
+{space 3}edustatus {c |}
+{space 8}Yes  {c |}{col 14}{res}{space 2} .1368478{col 26}{space 2} .1240206{col 37}{space 1}    1.10{col 46}{space 3}0.270{col 54}{space 4}-.1062281{col 67}{space 3} .3799237
+{txt}{space 12} {c |}
+{space 8}educ {c |}
+{space 2}Secondary  {c |}{col 14}{res}{space 2} .1710789{col 26}{space 2} .1400487{col 37}{space 1}    1.22{col 46}{space 3}0.222{col 54}{space 4}-.1034116{col 67}{space 3} .4455695
+{txt}{space 5}Higher  {c |}{col 14}{res}{space 2}-.0856792{col 26}{space 2} .1968266{col 37}{space 1}   -0.44{col 46}{space 3}0.663{col 54}{space 4}-.4714525{col 67}{space 3}  .300094
+{txt}{space 12} {c |}
+{space 4}employmt {c |}
+{space 8}Yes  {c |}{col 14}{res}{space 2}-.2611566{col 26}{space 2} .1197814{col 37}{space 1}   -2.18{col 46}{space 3}0.029{col 54}{space 4}-.4959238{col 67}{space 3}-.0263894
+{txt}{space 12} {c |}
+{space 5}married {c |}
+{space 4}Married  {c |}{col 14}{res}{space 2} 1.659355{col 26}{space 2} .1497168{col 37}{space 1}   11.08{col 46}{space 3}0.000{col 54}{space 4} 1.365913{col 67}{space 3} 1.952798
+{txt}{space 12} {c |}
+{space 5}poverty {c |}
+{space 2}10% - 20%  {c |}{col 14}{res}{space 2} .4191124{col 26}{space 2} .1356953{col 37}{space 1}    3.09{col 46}{space 3}0.002{col 54}{space 4} .1531545{col 67}{space 3} .6850704
+{txt}{space 3}{&ge}20%  {c |}{col 14}{res}{space 2} .6365862{col 26}{space 2} .1355107{col 37}{space 1}    4.70{col 46}{space 3}0.000{col 54}{space 4} .3709901{col 67}{space 3} .9021823
+{txt}{space 12} {c |}
+{space 3}npartners {c |}{col 14}{res}{space 2}-.1995715{col 26}{space 2} .0975664{col 37}{space 1}   -2.05{col 46}{space 3}0.041{col 54}{space 4}-.3909142{col 67}{space 3}-.0082289
+{txt}nintercourse {c |}{col 14}{res}{space 2}-.0975639{col 26}{space 2}  .058586{col 37}{space 1}   -1.67{col 46}{space 3}0.096{col 54}{space 4}-.2124388{col 67}{space 3}  .017311
+{txt}{space 12} {c |}
+{space 1}c.npartners#{c |}
+{space 10}c. {c |}
+nintercourse {c |}{col 14}{res}{space 2} .0811532{col 26}{space 2} .0428533{col 37}{space 1}    1.89{col 46}{space 3}0.059{col 54}{space 4}-.0030634{col 67}{space 3} .1653697
+{txt}{space 12} {c |}
+{space 3}nchildren {c |}
+{space 2}1 or more  {c |}{col 14}{res}{space 2} .2950793{col 26}{space 2} .1274429{col 37}{space 1}    2.32{col 46}{space 3}0.021{col 54}{space 4} .0452897{col 67}{space 3} .5448689
+{txt}{space 12} {c |}
+{space 9}sti {c |}
+{space 8}Yes  {c |}{col 14}{res}{space 2}-.2500258{col 26}{space 2} .1188307{col 37}{space 1}   -2.10{col 46}{space 3}0.035{col 54}{space 4}-.4829297{col 67}{space 3}-.0171218
+{txt}{space 12} {c |}
+{space 3}contother {c |}
+Modern Me..  {c |}{col 14}{res}{space 2} .0278591{col 26}{space 2}  .118337{col 37}{space 1}    0.24{col 46}{space 3}0.814{col 54}{space 4}-.2040772{col 67}{space 3} .2597954
+{txt}LARC/LAPM..  {c |}{col 14}{res}{space 2} .2850542{col 26}{space 2} .1883439{col 37}{space 1}    1.51{col 46}{space 3}0.130{col 54}{space 4}-.0840933{col 67}{space 3} .6542018
+{txt}{space 12} {c |}
+{space 6}nearHF {c |}
+{space 2}>= 2.5 km  {c |}{col 14}{res}{space 2} .1674282{col 26}{space 2} .1429815{col 37}{space 1}    1.17{col 46}{space 3}0.242{col 54}{space 4} -.112841{col 67}{space 3} .4476974
+{txt}{space 1}1.ncontknow {c |}{col 14}{res}{space 2} .0532581{col 26}{space 2} .1026282{col 37}{space 1}    0.52{col 46}{space 3}0.604{col 54}{space 4}-.1478894{col 67}{space 3} .2544057
+{txt}{space 12} {c |}
+contspkpar~t {c |}
+{space 8}Yes  {c |}{col 14}{res}{space 2}-.3779138{col 26}{space 2} .1227235{col 37}{space 1}   -3.08{col 46}{space 3}0.002{col 54}{space 4}-.6184486{col 67}{space 3}-.1373789
+{txt}{space 12} {c |}
+{space 3}contagree {c |}
+{space 8}Yes  {c |}{col 14}{res}{space 2}-.5140675{col 26}{space 2} .1275051{col 37}{space 1}   -4.03{col 46}{space 3}0.000{col 54}{space 4}-.7639761{col 67}{space 3} -.264159
+{txt}condop_index {c |}{col 14}{res}{space 2} .2294115{col 26}{space 2} .0508797{col 37}{space 1}    4.51{col 46}{space 3}0.000{col 54}{space 4} .1296891{col 67}{space 3} .3291339
+{txt}{space 7}_cons {c |}{col 14}{res}{space 2}-.1998025{col 26}{space 2} .2306434{col 37}{space 1}   -0.87{col 46}{space 3}0.386{col 54}{space 4}-.6518593{col 67}{space 3} .2522542
+{txt}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}{txt}
+{com}. eststo rob3
+{txt}
+{com}. mi estimate, post: ///
+>     reg nocondlast `demovars' `sexvars' `accessvars' `othervars', vce(robust)
+{res}
+{txt}Multiple-imputation estimates{col 51}Imputations{col 67}= {res}        50
+{txt}Linear regression{col 51}Number of obs{col 67}= {res}      2388
+{txt}{col 51}Average RVI{col 67}= {res}    0.0372
+{txt}{col 51}Largest FMI{col 67}= {res}    0.3057
+{txt}{col 51}Complete DF{col 67}= {res}      2367
+{txt}DF adjustment:{ralign 15: {res:Small sample}}{col 51}DF:     min{col 67}= {res}    403.48
+{txt}{col 51}        avg{col 67}= {res}   2113.85
+{txt}{col 51}        max{col 67}= {res}   2362.17
+{txt}Model F test:{ralign 16: {res:Equal FMI}}{col 51}F({res}  20{txt},{res} 2356.8{txt}){col 67}= {res}     42.60
+{txt}Within VCE type: {ralign 12:{res:Robust}}{col 51}Prob > F{col 67}= {res}    0.0000
+
+{txt}{hline 13}{c TT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{col 1}  nocondlast{col 14}{c |}      Coef.{col 26}   Std. Err.{col 38}      t{col 46}   P>|t|{col 54}     [95% Con{col 67}f. Interval]
+{hline 13}{c +}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{space 4}1.gender {c |}{col 14}{res}{space 2} .1073149{col 26}{space 2} .0249774{col 37}{space 1}    4.30{col 46}{space 3}0.000{col 54}{space 4} .0583349{col 67}{space 3} .1562949
+{txt}{space 1}1.edustatus {c |}{col 14}{res}{space 2} .0316675{col 26}{space 2} .0256751{col 37}{space 1}    1.23{col 46}{space 3}0.218{col 54}{space 4}-.0186806{col 67}{space 3} .0820155
+{txt}{space 12} {c |}
+{space 8}educ {c |}
+{space 10}1  {c |}{col 14}{res}{space 2} .0297832{col 26}{space 2} .0230575{col 37}{space 1}    1.29{col 46}{space 3}0.197{col 54}{space 4} -.015432{col 67}{space 3} .0749984
+{txt}{space 10}2  {c |}{col 14}{res}{space 2} -.033635{col 26}{space 2} .0376018{col 37}{space 1}   -0.89{col 46}{space 3}0.371{col 54}{space 4}-.1073711{col 67}{space 3} .0401011
+{txt}{space 12} {c |}
+{space 2}1.employmt {c |}{col 14}{res}{space 2} -.050587{col 26}{space 2}  .023396{col 37}{space 1}   -2.16{col 46}{space 3}0.031{col 54}{space 4}-.0964658{col 67}{space 3}-.0047082
+{txt}{space 3}1.married {c |}{col 14}{res}{space 2} .3118335{col 26}{space 2} .0262527{col 37}{space 1}   11.88{col 46}{space 3}0.000{col 54}{space 4} .2603517{col 67}{space 3} .3633153
+{txt}{space 12} {c |}
+{space 5}poverty {c |}
+{space 10}1  {c |}{col 14}{res}{space 2} .0873289{col 26}{space 2} .0276694{col 37}{space 1}    3.16{col 46}{space 3}0.002{col 54}{space 4} .0330699{col 67}{space 3} .1415878
+{txt}{space 10}2  {c |}{col 14}{res}{space 2} .1307507{col 26}{space 2} .0275191{col 37}{space 1}    4.75{col 46}{space 3}0.000{col 54}{space 4} .0767867{col 67}{space 3} .1847148
+{txt}{space 12} {c |}
+{space 3}npartners {c |}{col 14}{res}{space 2}-.0288665{col 26}{space 2} .0111656{col 37}{space 1}   -2.59{col 46}{space 3}0.010{col 54}{space 4}-.0507727{col 67}{space 3}-.0069602
+{txt}nintercourse {c |}{col 14}{res}{space 2}-.0156962{col 26}{space 2} .0094076{col 37}{space 1}   -1.67{col 46}{space 3}0.095{col 54}{space 4}-.0341525{col 67}{space 3} .0027601
+{txt}{space 12} {c |}
+{space 1}c.npartners#{c |}
+{space 10}c. {c |}
+nintercourse {c |}{col 14}{res}{space 2} .0126981{col 26}{space 2} .0059675{col 37}{space 1}    2.13{col 46}{space 3}0.034{col 54}{space 4} .0009668{col 67}{space 3} .0244294
+{txt}{space 12} {c |}
+{space 1}1.nchildren {c |}{col 14}{res}{space 2} .0687774{col 26}{space 2} .0260683{col 37}{space 1}    2.64{col 46}{space 3}0.008{col 54}{space 4} .0176562{col 67}{space 3} .1198987
+{txt}{space 7}1.sti {c |}{col 14}{res}{space 2}-.0519925{col 26}{space 2} .0242253{col 37}{space 1}   -2.15{col 46}{space 3}0.032{col 54}{space 4}-.0994975{col 67}{space 3}-.0044876
+{txt}{space 12} {c |}
+{space 3}contother {c |}
+{space 10}1  {c |}{col 14}{res}{space 2} .0040043{col 26}{space 2} .0232917{col 37}{space 1}    0.17{col 46}{space 3}0.864{col 54}{space 4}-.0416701{col 67}{space 3} .0496786
+{txt}{space 10}2  {c |}{col 14}{res}{space 2} .0424213{col 26}{space 2} .0328116{col 37}{space 1}    1.29{col 46}{space 3}0.196{col 54}{space 4}-.0219214{col 67}{space 3}  .106764
+{txt}{space 12} {c |}
+{space 4}1.nearHF {c |}{col 14}{res}{space 2}  .027452{col 26}{space 2} .0240803{col 37}{space 1}    1.14{col 46}{space 3}0.254{col 54}{space 4}-.0197752{col 67}{space 3} .0746792
+{txt}{space 1}1.ncontknow {c |}{col 14}{res}{space 2} .0109519{col 26}{space 2} .0193741{col 37}{space 1}    0.57{col 46}{space 3}0.572{col 54}{space 4}-.0270401{col 67}{space 3} .0489439
+{txt}1.contspkp~t {c |}{col 14}{res}{space 2}-.0763498{col 26}{space 2}  .023972{col 37}{space 1}   -3.18{col 46}{space 3}0.001{col 54}{space 4}-.1233588{col 67}{space 3}-.0293408
+{txt}{space 1}1.contagree {c |}{col 14}{res}{space 2}-.1021263{col 26}{space 2} .0247882{col 37}{space 1}   -4.12{col 46}{space 3}0.000{col 54}{space 4}-.1507364{col 67}{space 3}-.0535162
+{txt}condop_index {c |}{col 14}{res}{space 2} .0390964{col 26}{space 2} .0085795{col 37}{space 1}    4.56{col 46}{space 3}0.000{col 54}{space 4} .0222722{col 67}{space 3} .0559206
+{txt}{space 7}_cons {c |}{col 14}{res}{space 2} .4410705{col 26}{space 2} .0434559{col 37}{space 1}   10.15{col 46}{space 3}0.000{col 54}{space 4} .3558545{col 67}{space 3} .5262865
+{txt}{hline 13}{c BT}{hline 11}{hline 11}{hline 9}{hline 8}{hline 13}{hline 12}
+{res}{txt}
+{com}. eststo rob4
+{txt}
+{com}. 
+. esttab rob* using "${c -(}tables{c )-}/table_03.csv", ///
+>     title("Robustness Checks.") ///
+>     cells(`"b(fmt(%9.2f) star) ci( par("(" " - " ")") fmt(%9.2f))"') ///
+>         coeflabels("RR" "95% CI") ///
+>         scalars(ll chi2) ///
+>         wide label replace
+{res}{txt}(note: file C:/Users/cboyer.IPA/Desktop/GitHub/PSI-Womens-Condom/tables/table_03.csv not found)
+(output written to {browse  `"C:/Users/cboyer.IPA/Desktop/GitHub/PSI-Womens-Condom/tables/table_03.csv"'})
+
+{com}. 
+{txt}end of do-file
+
+{com}. 
+. log close
+      {txt}name:  {res}<unnamed>
+       {txt}log:  {res}C:/Users/cboyer.IPA/Desktop/GitHub/PSI-Womens-Condom/log/maximum_diva_19 Dec 2016.smcl
+  {txt}log type:  {res}smcl
+ {txt}closed on:  {res}19 Dec 2016, 23:40:48
+{txt}{.-}
+{smcl}
+{txt}{sf}{ul off}

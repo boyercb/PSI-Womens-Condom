@@ -1,3 +1,6 @@
 archive/
 do/archive
 tables/archive
+do/00_hygiene.do
+data/specify_other.xlsx
+data/maximum_diva.dta
